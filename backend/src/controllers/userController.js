@@ -60,7 +60,10 @@ export const updateProfile = asyncHandler(async (req, res) => {
   if (user.role === 'mentor') {
     if (college !== undefined) user.college = college;
     if (state !== undefined) user.state = state;
-    if (rank !== undefined) user.rank = Number(rank);
+    if (rank !== undefined) {
+      const parsedRank = parseInt(rank, 10);
+      user.rank = isNaN(parsedRank) ? 0 : parsedRank;
+    }
     if (bundles !== undefined) user.bundles = Array.isArray(bundles) ? bundles : [];
     if (bio !== undefined) user.bio = bio;
   }

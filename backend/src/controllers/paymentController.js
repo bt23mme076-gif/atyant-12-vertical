@@ -137,10 +137,28 @@ export const webhook = asyncHandler(async (req, res) => {
   if (type === 'payment.captured') {
     const p = payload.payment?.entity;
     if (p?.order_id) {
-      await Payment.findOneAndUpdate(
+      // Update payment status
+      const payment = await Payment.findOneAndUpdate(
         { razorpayOrderId: p.order_id },
-        { razorpayPaymentId: p.id, status: 'paid' }
+        { razorpayPaymentId: p.id, status: 'paid' },
+        { new: true }
       );
+
+      // Premium unlock & mentor session confirm logic
+      if (payment) {
+        // Unlock premium for user (by email)
+        const { email } = payment;
+        const user = await (await import('../models/User.js')).User.findOne({ email });
+        if (user) {
+          user.premium = true;
+          user.premiumActivatedAt = new Date();
+          await user.save();
+        }
+
+        // Confirm mentor session (if you have such logic, e.g., update a session/booking model)
+        // Example: If you have a Booking model, you can update it here
+        // await Booking.findOneAndUpdate({ paymentId: payment._id }, { status: 'confirmed' });
+      }
     }
   } else if (type === 'payment.failed') {
     const p = payload.payment?.entity;
