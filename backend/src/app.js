@@ -24,13 +24,14 @@ app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 
 app.use(
   cors({
-    origin: (origin, cb) => {
-      // Allow requests with no origin (curl, mobile apps, server-to-server)
-      if (!origin) return cb(null, true);
-      if (config.corsOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error(`CORS blocked: ${origin}`));
-    },
+    origin: [
+      'https://atyantjee02-fe.vercel.app',
+      'http://localhost:3000', // keep for local dev
+      'http://localhost:5173', // if using Vite
+    ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
