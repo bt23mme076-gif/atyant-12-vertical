@@ -25,7 +25,7 @@ app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 app.use(
   cors({
     origin: [
-      'https://atyantjee02-fe.vercel.app',
+      'https://atyantjee.vercel.app', // added for production frontend
       'http://localhost:3000', // keep for local dev
       'http://localhost:5173', // if using Vite
     ],
