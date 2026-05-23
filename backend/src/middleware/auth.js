@@ -28,3 +28,35 @@ export async function requireAdmin(req, res, next) {
     next(err);
   }
 }
+
+// Requires a valid Bearer token from a real user (or admin) in the DB.
+export async function requireUser(req, res, next) {
+  try {
+    const header = req.headers.authorization || '';
+    const [scheme, token] = header.split(' ');
+    if (scheme !== 'Bearer' || !token) {
+      throw new AppError('Missing or invalid Authorization header', 401);
+    }
+
+    let payload;
+    try {
+      payload = verifyToken(token);
+    } catch {
+      throw new AppError('Invalid or expired token', 401);
+    }
+
+    // Try finding an admin first (so admins can hit user routes), else find a user
+    let user = await Admin.findById(payload.sub);
+    if (!user) {
+      const { User } = await import('../models/User.js');
+      user = await User.findById(payload.sub);
+    }
+    
+    if (!user) throw new AppError('User not found', 401);
+
+    req.user = user;
+    next();
+  } catch (err) {
+    next(err);
+  }
+}

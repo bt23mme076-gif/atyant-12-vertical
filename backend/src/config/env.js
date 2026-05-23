@@ -24,6 +24,10 @@ export const config = {
     adminEmail: process.env.SEED_ADMIN_EMAIL,
     adminPassword: process.env.SEED_ADMIN_PASSWORD,
   },
+  groq: {
+    apiKey: process.env.GROQ_API_KEY,
+    model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
+  },
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY,
     model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',

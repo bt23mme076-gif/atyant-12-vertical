@@ -24,16 +24,18 @@ Reply in clear, simple English only.`;
 const MAX_HISTORY = 20; // last 20 messages we send to the model
 
 export async function generateReply({ session, userMessage }) {
-  if (!config.anthropic.apiKey) {
-    // Graceful fallback so dev works without an API key
+  const groqKey = process.env.GROQ_API_KEY;
+
+  if (!groqKey || groqKey.startsWith('sk-ant-xx')) {
+    // Graceful fallback so dev works without a real API key
     return {
-      content: `Thanks — we got: "${userMessage}". (Chat AI not configured yet — the team will follow up by email.)`,
+      content: `Thanks — we got: "${userMessage}". Our team will follow up by email with personalised advice.`,
       stub: true,
     };
   }
 
   // Build the messages array from session history + current user msg.
-  // The Anthropic API expects alternating user/assistant roles.
+  // The OpenAI/Groq API expects alternating user/assistant roles.
   const history = session.messages.slice(-MAX_HISTORY).map((m) => ({
     role: m.role === 'assistant' ? 'assistant' : 'user',
     content: m.content,
@@ -43,14 +45,14 @@ export async function generateReply({ session, userMessage }) {
 
   let res;
   try {
-    rres = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.groq.apiKey}`,
+        'Authorization': `Bearer ${groqKey}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
         max_tokens: 400,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
@@ -59,23 +61,20 @@ export async function generateReply({ session, userMessage }) {
       }),
     });
   } catch (err) {
-    throw new AppError(`GROQ API request failed: ${err.message}`, 502);
+    throw new AppError(`Groq API request failed: ${err.message}`, 502);
   }
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new AppError(`GROQ API error ${res.status}: ${text.slice(0, 200)}`, 502);
+    throw new AppError(`Groq API error ${res.status}: ${text.slice(0, 200)}`, 502);
   }
 
   const data = await res.json();
-  // data.content is an array of blocks; we only care about text blocks.
-  const text = (data.content || [])
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('\n')
-    .trim();
 
-  if (!text) throw new AppError('Anthropic API returned empty content', 502);
+  // Groq returns OpenAI-format: data.choices[0].message.content
+  const text = data?.choices?.[0]?.message?.content?.trim() || '';
+
+  if (!text) throw new AppError('Groq API returned empty content', 502);
 
   return { content: text, stub: false, usage: data.usage };
 }

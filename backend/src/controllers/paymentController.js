@@ -26,7 +26,7 @@ export const listPlans = asyncHandler(async (req, res) => {
 });
 
 export const createOrderSchema = z.object({
-  planId: z.enum(['better-college', 'better-branch', 'combo', '1to1']),
+  planId: z.enum(['insider', 'backup', 'better-college', 'better-branch', 'combo', '1to1']),
   name: z.string().min(1).max(120),
   email: z.string().email(),
   phone: z.string().max(20).optional(),

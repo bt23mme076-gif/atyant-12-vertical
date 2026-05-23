@@ -7,10 +7,12 @@ import { AppError } from '../utils/asyncHandler.js';
 // via GET /api/payments/plans so we never trust amounts coming from the
 // browser (anyone could tamper with the price).
 export const PLANS = {
-  'better-college': { id: 'better-college', title: 'Better College', amount: 14900 }, // paise
-  'better-branch':  { id: 'better-branch',  title: 'Better Branch',  amount: 14900 },
-  'combo':          { id: 'combo',          title: 'Combo Pack',     amount: 24900 },
-  '1to1':           { id: '1to1',           title: '1:1 Personal Guidance', amount: 99900 },
+  'insider':        { id: 'insider',        title: 'Insider Connect',   amount: 29900 },
+  'backup':         { id: 'backup',         title: 'Backup Plan',       amount: 49900 },
+  'better-college': { id: 'better-college', title: 'Better College',    amount: 74900 },
+  'better-branch':  { id: 'better-branch',  title: 'Better Branch',     amount: 74900 },
+  'combo':          { id: 'combo',          title: 'Complete Guidance', amount: 109900 },
+  '1to1':           { id: '1to1',           title: 'Secured Seat',      amount: 129900 },
 };
 
 let _client = null;
