@@ -26,6 +26,7 @@ app.use(
   cors({
     origin: [
       'https://atyantjee.vercel.app', // added for production frontend
+      'https://jee.atyant.in',        // new production domain
       'http://localhost:3000', // keep for local dev
       'http://localhost:5173', // if using Vite
     ],
