@@ -19,7 +19,9 @@ const app = express();
 
 app.set('trust proxy', 1); // honour X-Forwarded-For when behind a proxy
 
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 
 app.use(
@@ -36,7 +38,7 @@ app.use(
   })
 );
 
-// IMPORTANT: Razorpay webhook needs the RAW body to verify the signature.
+
 // We mount it BEFORE the JSON parser, with a raw parser that also stores
 // the buffer on req.rawBody.
 app.post(

@@ -5,7 +5,8 @@ import {
   uploadIdDocHandler,
   serveIdDoc,
   verifyIdDoc,
-  rejectIdDoc
+  rejectIdDoc,
+  deleteIdDocHandler
 } from '../controllers/uploadController.js';
 import { requireUser, requireAdmin } from '../middleware/auth.js';
 
@@ -22,8 +23,11 @@ router.post('/profile-photo', requireUser, uploadProfilePhoto.single('file'), up
 // Mentor uploads their Aadhaar / College ID
 router.post('/id-doc', requireUser, uploadIdDoc.single('file'), uploadIdDocHandler);
 
-// ADMIN ONLY routes
-router.get('/id-doc/:mentorId', requireAdmin, serveIdDoc);
+// Mentor deletes their Aadhaar / College ID
+router.delete('/id-doc', requireUser, deleteIdDocHandler);
+
+// ADMIN / OWNER routes
+router.get('/id-doc/:mentorId', requireUser, serveIdDoc);
 router.patch('/id-doc/:mentorId/verify', requireAdmin, verifyIdDoc);
 router.patch('/id-doc/:mentorId/reject', requireAdmin, rejectIdDoc);
 

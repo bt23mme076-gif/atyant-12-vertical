@@ -6,20 +6,19 @@ import { asyncHandler, AppError } from '../utils/asyncHandler.js';
 import {
   PLANS,
   createOrder,
-  verifyCheckoutSignature,
-  verifyWebhookSignature,
+  getOrderDetails,
 } from '../services/paymentService.js';
 
 // GET /api/payments/plans — public, used by frontend to render pricing
 export const listPlans = asyncHandler(async (req, res) => {
   res.json({
     ok: true,
-    razorpayKeyId: config.razorpay.keyId || null,
+    cashfreeAppId: config.cashfree.appId || null,
     plans: Object.values(PLANS).map((p) => ({
       id: p.id,
       title: p.title,
       amount: p.amount,
-      amountInr: p.amount / 100,
+      amountInr: p.amount, // cashfree is in INR (main unit)
       currency: 'INR',
     })),
   });
@@ -36,11 +35,12 @@ export const createOrderSchema = z.object({
 // POST /api/payments/orders — public, called when user clicks "Buy"
 export const createPaymentOrder = asyncHandler(async (req, res) => {
   const { planId, name, email, phone, mentorId } = req.body;
-  const { order, plan } = await createOrder({ planId, name, email, phone });
+  const { orderId, paymentSessionId, amount, plan } = await createOrder({ planId, name, email, phone });
 
-  // Persist in our DB so we can reconcile via webhook later
+  // Persist in our DB
   const payment = await Payment.create({
-    razorpayOrderId: order.id,
+    cashfreeOrderId: orderId,
+    paymentSessionId,
     planId: plan.id,
     planTitle: plan.title,
     amount: plan.amount,
@@ -52,7 +52,7 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
     status: 'created',
   });
 
-  // Also drop a lead row so even abandoned carts show up in /admin
+  // Create a lead row
   const lead = await Lead.create({
     name,
     email,
@@ -65,48 +65,54 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     ok: true,
-    order: {
-      id: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      receipt: order.receipt,
-    },
+    orderId,
+    paymentSessionId,
+    amount,
     plan: { id: plan.id, title: plan.title, amount: plan.amount },
-    razorpayKeyId: config.razorpay.keyId,
+    cashfreeEnvironment: config.cashfree.environment,
   });
 });
 
 export const verifyPaymentSchema = z.object({
-  razorpayOrderId: z.string().min(1),
-  razorpayPaymentId: z.string().min(1),
-  razorpaySignature: z.string().min(1),
+  cashfreeOrderId: z.string().min(1),
 });
 
-// POST /api/payments/verify — called from frontend after Razorpay checkout success
+// POST /api/payments/verify — called from frontend to check order status directly from Cashfree
 export const verifyPayment = asyncHandler(async (req, res) => {
-  const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+  const { cashfreeOrderId } = req.body;
 
-  const isValid = verifyCheckoutSignature({
-    orderId: razorpayOrderId,
-    paymentId: razorpayPaymentId,
-    signature: razorpaySignature,
-  });
-  if (!isValid) throw new AppError('Invalid payment signature', 400);
+  const orderDetails = await getOrderDetails(cashfreeOrderId);
+  
+  if (orderDetails.order_status !== 'PAID') {
+    throw new AppError(`Payment not completed. Status is ${orderDetails.order_status}`, 400);
+  }
 
   const payment = await Payment.findOneAndUpdate(
-    { razorpayOrderId },
+    { cashfreeOrderId },
     {
-      razorpayPaymentId,
-      razorpaySignature,
       status: 'paid',
+      cashfreePaymentId: orderDetails.order_id,
     },
     { new: true }
   );
   if (!payment) throw new AppError('Order not found', 404);
 
-  // Mark the matching lead as converted
+  // Mark lead as converted
   if (payment.leadId) {
     await Lead.findByIdAndUpdate(payment.leadId, { status: 'converted' });
+  }
+
+  // Find user and mark premium
+  const user = await (await import('../models/User.js')).User.findOne({
+    $or: [
+      { phone: payment.phone },
+      { email: payment.email.toLowerCase() }
+    ]
+  });
+  if (user) {
+    user.premium = true;
+    user.premiumActivatedAt = new Date();
+    await user.save();
   }
 
   res.json({
@@ -120,62 +126,9 @@ export const verifyPayment = asyncHandler(async (req, res) => {
   });
 });
 
-// POST /api/payments/webhook — server-to-server from Razorpay.
-// This route MUST receive the raw body (set in app.js).
+// POST /api/payments/webhook
 export const webhook = asyncHandler(async (req, res) => {
-  const signature = req.headers['x-razorpay-signature'];
-  const rawBody = req.rawBody;
-
-  if (!signature || !rawBody) {
-    throw new AppError('Missing webhook signature or body', 400);
-  }
-  const ok = verifyWebhookSignature({ rawBody, signature });
-  if (!ok) throw new AppError('Invalid webhook signature', 400);
-
-  const event = JSON.parse(rawBody.toString('utf8'));
-  const type = event.event;
-  const payload = event.payload || {};
-
-  if (type === 'payment.captured') {
-    const p = payload.payment?.entity;
-    if (p?.order_id) {
-      // Update payment status
-      const payment = await Payment.findOneAndUpdate(
-        { razorpayOrderId: p.order_id },
-        { razorpayPaymentId: p.id, status: 'paid' },
-        { new: true }
-      );
-
-      // Premium unlock & mentor session confirm logic
-      if (payment) {
-        // Unlock premium for user (by email)
-        const { email } = payment;
-        const user = await (await import('../models/User.js')).User.findOne({ email });
-        if (user) {
-          user.premium = true;
-          user.premiumActivatedAt = new Date();
-          await user.save();
-        }
-
-        // Confirm mentor session (if you have such logic, e.g., update a session/booking model)
-        // Example: If you have a Booking model, you can update it here
-        // await Booking.findOneAndUpdate({ paymentId: payment._id }, { status: 'confirmed' });
-      }
-    }
-  } else if (type === 'payment.failed') {
-    const p = payload.payment?.entity;
-    if (p?.order_id) {
-      await Payment.findOneAndUpdate(
-        { razorpayOrderId: p.order_id },
-        {
-          razorpayPaymentId: p.id,
-          status: 'failed',
-          failureReason: p.error_description || p.error_code,
-        }
-      );
-    }
-  }
-  // Always 200 so Razorpay doesn't retry forever
+  // Simple webhook receiver for compatibility
   res.json({ ok: true });
 });
 
@@ -195,11 +148,10 @@ export const listPayments = asyncHandler(async (req, res) => {
   res.json({ ok: true, page, limit, total, items });
 });
 
-// GET /api/payments/my-bookings — logged-in user retrieves their paid bundles + selected mentors
+// GET /api/payments/my-bookings
 export const getMyBookings = asyncHandler(async (req, res) => {
   const user = req.user;
   
-  // Search for payments belonging to this user by phone or email that are paid
   const query = {
     status: 'paid',
     $or: []
@@ -212,7 +164,6 @@ export const getMyBookings = asyncHandler(async (req, res) => {
     query.$or.push({ email: user.email.toLowerCase() });
   }
   
-  // If neither phone nor email exists for some reason, return empty
   if (query.$or.length === 0) {
     return res.json({ ok: true, bookings: [] });
   }

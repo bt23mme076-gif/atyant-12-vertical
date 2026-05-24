@@ -9,6 +9,13 @@ export async function connectDB() {
     });
     console.log('MongoDB connected');
 
+    try {
+      await mongoose.connection.collection('users').dropIndex('email_1');
+      console.log('Dropped old users email unique index successfully');
+    } catch (e) {
+      // Index might not exist, ignore
+    }
+
     mongoose.connection.on('error', (err) => {
       console.error('MongoDB error:', err);
     });

@@ -39,15 +39,14 @@ export const uploadProfilePhotoHandler = async (req, res) => {
 
 export const serveProfilePhoto = (req, res) => {
   const filename = req.params.filename;
-  const filePath = path.join(PROFILE_PHOTO_DIR, filename);
+  const filePath = path.resolve(PROFILE_PHOTO_DIR, filename);
   
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'Photo not found' });
   }
   
   res.setHeader('Cache-Control', 'public, max-age=86400');
-  const stream = fs.createReadStream(filePath);
-  stream.pipe(res);
+  res.sendFile(filePath);
 };
 
 export const uploadIdDocHandler = async (req, res) => {
@@ -71,6 +70,7 @@ export const uploadIdDocHandler = async (req, res) => {
       success: true,
       message: 'Document received. Verification takes 24-48 hours.',
       verificationStatus: 'pending',
+      filename: req.file.filename,
     });
   } catch (error) {
     console.error('ID Doc upload error:', error);
@@ -81,21 +81,26 @@ export const uploadIdDocHandler = async (req, res) => {
 export const serveIdDoc = async (req, res) => {
   try {
     const mentorId = req.params.mentorId;
+    
+    // Auth check: Admin or the mentor owning the document
+    if (req.user.role !== 'admin' && req.user.id.toString() !== mentorId.toString()) {
+      return res.status(403).json({ error: 'Access denied. You can only view your own documents.' });
+    }
+
     const mentor = await User.findById(mentorId);
     
     if (!mentor || !mentor.idDocFilename) {
       return res.status(404).json({ error: 'No ID document on file' });
     }
 
-    const filePath = path.join(ID_DOC_DIR, mentor.idDocFilename);
+    const filePath = path.resolve(ID_DOC_DIR, mentor.idDocFilename);
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'File missing from disk' });
     }
 
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('Cache-Control', 'no-store');
-    const stream = fs.createReadStream(filePath);
-    stream.pipe(res);
+    res.sendFile(filePath);
   } catch (error) {
     console.error('Serve ID doc error:', error);
     res.status(500).json({ error: 'Failed to serve document' });
@@ -137,5 +142,35 @@ export const rejectIdDoc = async (req, res) => {
   } catch (error) {
     console.error('Reject ID doc error:', error);
     res.status(500).json({ error: 'Failed to reject document' });
+  }
+};
+
+export const deleteIdDocHandler = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const mentor = await User.findById(mentorId);
+    if (!mentor) {
+      return res.status(404).json({ error: 'Mentor not found' });
+    }
+
+    if (mentor.idDocFilename) {
+      const filePath = path.resolve(ID_DOC_DIR, mentor.idDocFilename);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    mentor.idDocFilename = undefined;
+    mentor.verificationStatus = 'none';
+    await mentor.save();
+
+    res.json({
+      success: true,
+      message: 'ID document deleted successfully',
+      verificationStatus: 'none',
+    });
+  } catch (error) {
+    console.error('Delete ID doc error:', error);
+    res.status(500).json({ error: 'Failed to delete ID document' });
   }
 };

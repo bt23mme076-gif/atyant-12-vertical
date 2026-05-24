@@ -2,10 +2,10 @@ import mongoose from 'mongoose';
 
 const paymentSchema = new mongoose.Schema(
   {
-    // Razorpay identifiers
-    razorpayOrderId: { type: String, required: true, unique: true, index: true },
-    razorpayPaymentId: { type: String, index: true },
-    razorpaySignature: { type: String },
+    // Cashfree identifiers
+    cashfreeOrderId: { type: String, required: true, unique: true, index: true },
+    cashfreePaymentId: { type: String, index: true },
+    paymentSessionId: { type: String },
 
     // Order details
     planId: { type: String, required: true }, // 'better-college' | 'better-branch' | 'combo' | '1to1'

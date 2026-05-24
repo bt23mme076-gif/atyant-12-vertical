@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema(
     // Mentor-specific fields
     college: { type: String, trim: true },
     state: { type: String, trim: true },
+    category: { type: String, trim: true },
     rank: { type: Number },
     bundles: [{ type: String }],
     bio: { type: String, trim: true, maxLength: 500 },
@@ -64,6 +65,7 @@ userSchema.methods.toSafeJSON = function () {
     role: this.role,
     college: this.college,
     state: this.state,
+    category: this.category,
     rank: this.rank,
     bundles: this.bundles,
     bio: this.bio,
