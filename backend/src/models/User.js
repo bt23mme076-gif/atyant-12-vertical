@@ -25,6 +25,11 @@ const userSchema = new mongoose.Schema(
       enum: ['student', 'mentor'],
       default: 'student',
     },
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     // Mentor-specific fields
     college: { type: String, trim: true },
     state: { type: String, trim: true },
@@ -55,6 +60,7 @@ userSchema.methods.toSafeJSON = function () {
   return {
     id: this._id,
     email: this.email,
+    phone:this.phone,
     name: this.name,
     role: this.role,
     college: this.college,
