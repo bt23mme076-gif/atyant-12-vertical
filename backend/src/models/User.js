@@ -3,11 +3,10 @@ import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema(
   {
-    email: {
+    phone: {
       type: String,
       required: true,
       unique: true,
-      lowercase: true,
       trim: true,
       index: true,
     },
@@ -25,9 +24,9 @@ const userSchema = new mongoose.Schema(
       enum: ['student', 'mentor'],
       default: 'student',
     },
-    phone: {
+    email: {
       type: String,
-      required: true,
+      lowercase: true,
       trim: true,
     },
     // Mentor-specific fields

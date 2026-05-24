@@ -27,6 +27,7 @@ const paymentSchema = new mongoose.Schema(
     },
     failureReason: { type: String },
     leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },
+    mentorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     meta: { type: mongoose.Schema.Types.Mixed },
   },
   { timestamps: true }

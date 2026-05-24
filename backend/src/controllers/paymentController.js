@@ -29,12 +29,13 @@ export const createOrderSchema = z.object({
   planId: z.enum(['quick-clarity', 'complete-guidance', 'dream-seat']),
   name: z.string().min(1).max(120),
   email: z.string().email(),
-  phone: z.string().max(20).optional(),
+  phone: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
+  mentorId: z.string().optional(),
 });
 
 // POST /api/payments/orders — public, called when user clicks "Buy"
 export const createPaymentOrder = asyncHandler(async (req, res) => {
-  const { planId, name, email, phone } = req.body;
+  const { planId, name, email, phone, mentorId } = req.body;
   const { order, plan } = await createOrder({ planId, name, email, phone });
 
   // Persist in our DB so we can reconcile via webhook later
@@ -47,6 +48,7 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
     name,
     email,
     phone,
+    mentorId: mentorId || undefined,
     status: 'created',
   });
 
@@ -56,7 +58,7 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
     email,
     phone,
     source: 'pricing',
-    meta: { planId, paymentId: payment._id },
+    meta: { planId, paymentId: payment._id, mentorId },
   });
   payment.leadId = lead._id;
   await payment.save();
@@ -191,4 +193,33 @@ export const listPayments = asyncHandler(async (req, res) => {
   ]);
 
   res.json({ ok: true, page, limit, total, items });
+});
+
+// GET /api/payments/my-bookings — logged-in user retrieves their paid bundles + selected mentors
+export const getMyBookings = asyncHandler(async (req, res) => {
+  const user = req.user;
+  
+  // Search for payments belonging to this user by phone or email that are paid
+  const query = {
+    status: 'paid',
+    $or: []
+  };
+  
+  if (user.phone) {
+    query.$or.push({ phone: user.phone });
+  }
+  if (user.email) {
+    query.$or.push({ email: user.email.toLowerCase() });
+  }
+  
+  // If neither phone nor email exists for some reason, return empty
+  if (query.$or.length === 0) {
+    return res.json({ ok: true, bookings: [] });
+  }
+
+  const bookings = await Payment.find(query)
+    .populate('mentorId', 'name college state rank bio profilePhotoFilename')
+    .sort({ createdAt: -1 });
+
+  res.json({ ok: true, bookings });
 });

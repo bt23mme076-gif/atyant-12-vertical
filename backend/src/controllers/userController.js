@@ -4,32 +4,25 @@ import { asyncHandler, AppError } from '../utils/asyncHandler.js';
 import { signToken } from '../utils/jwt.js';
 export const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email format"),
   phone: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   role: z.enum(['student', 'mentor']),
 });
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  phone: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
   password: z.string().min(1),
 });
 
 export const signup = asyncHandler(async (req, res) => {
-  const { name, email, phone, password, role } = req.body;
+  const { name, phone, password, role } = req.body;
 
-  const existing = await User.findOne({ email: email.toLowerCase() });
-  if (existing) {
-    throw new AppError('Email already in use', 400);
-  }
-
-  // Double check if a user with the same phone already exists if you want strict unique accounts
   const existingPhone = await User.findOne({ phone });
   if (existingPhone) {
     throw new AppError('Phone number already registered', 400);
   }
 
-  const user = new User({ name, email, phone, role });
+  const user = new User({ name, phone, role });
   await user.setPassword(password);
   await user.save();
 
@@ -38,9 +31,9 @@ export const signup = asyncHandler(async (req, res) => {
 });
 
 export const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { phone, password } = req.body;
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const user = await User.findOne({ phone });
   if (!user) throw new AppError('Invalid credentials', 401);
 
   const ok = await user.verifyPassword(password);
