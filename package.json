@@ -5,9 +5,10 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "seed:admin": "node src/scripts/seedAdmin.js"
+    "start": "node backend/src/server.js",
+    "dev": "nodemon backend/src/server.js",
+    "seed:admin": "node src/scripts/seedAdmin.js",
+    "postinstall": "cd backend && npm install"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
