@@ -31,6 +31,13 @@ const userSchema = new mongoose.Schema(
     rank: { type: Number },
     bundles: [{ type: String }],
     bio: { type: String, trim: true, maxLength: 500 },
+    profilePhotoFilename: { type: String },
+    idDocFilename: { type: String },
+    verificationStatus: {
+      type: String,
+      enum: ['pending', 'verified', 'rejected', 'none'],
+      default: 'none',
+    },
     lastLoginAt: Date,
   },
   { timestamps: true }
@@ -55,6 +62,9 @@ userSchema.methods.toSafeJSON = function () {
     rank: this.rank,
     bundles: this.bundles,
     bio: this.bio,
+    profilePhotoFilename: this.profilePhotoFilename,
+    idDocFilename: this.idDocFilename,
+    verificationStatus: this.verificationStatus,
     createdAt: this.createdAt,
     lastLoginAt: this.lastLoginAt,
   };

@@ -60,6 +60,8 @@ app.get('/', (req, res) => {
   res.json({ ok: true, service: 'atyant-backend', docs: '/api' });
 });
 
+import uploadRoutes from './routes/upload.js';
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadRoutes);
@@ -68,6 +70,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/decision', decisionRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 404 + error handler last
 app.use(notFoundHandler);
