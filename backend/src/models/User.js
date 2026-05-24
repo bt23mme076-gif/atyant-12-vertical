@@ -57,24 +57,30 @@ userSchema.methods.verifyPassword = function (plain) {
 };
 
 userSchema.methods.toSafeJSON = function () {
-  return {
+  const json = {
     id: this._id,
     email: this.email,
-    phone:this.phone,
+    phone: this.phone,
     name: this.name,
     role: this.role,
-    college: this.college,
-    state: this.state,
-    category: this.category,
-    rank: this.rank,
-    bundles: this.bundles,
-    bio: this.bio,
-    profilePhotoFilename: this.profilePhotoFilename,
-    idDocFilename: this.idDocFilename,
-    verificationStatus: this.verificationStatus,
     createdAt: this.createdAt,
     lastLoginAt: this.lastLoginAt,
   };
+
+  // Only include mentor-specific fields if the user is a mentor
+  if (this.role === 'mentor') {
+    json.college = this.college;
+    json.state = this.state;
+    json.category = this.category;
+    json.rank = this.rank;
+    json.bundles = this.bundles;
+    json.bio = this.bio;
+    json.profilePhotoFilename = this.profilePhotoFilename;
+    json.idDocFilename = this.idDocFilename;
+    json.verificationStatus = this.verificationStatus;
+  }
+
+  return json;
 };
 
 export const User = mongoose.model('User', userSchema);
