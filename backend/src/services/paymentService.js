@@ -15,7 +15,7 @@ export function getPlan(planId) {
 
 export async function createOrder({ planId, name, email, phone }) {
   const plan = getPlan(planId);
-  const orderId = `order_${Date.now()}`;
+  const orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   const cashfreeUrl = config.cashfree.environment === 'production'
     ? 'https://api.cashfree.com/pg/orders'
@@ -32,7 +32,7 @@ export async function createOrder({ planId, name, email, phone }) {
       customer_email: email || 'student@atyant.in',
     },
     order_meta: {
-      return_url: `${config.nodeEnv === 'production' ? 'https://jee.atyant.in' : 'http://localhost:5173'}/profile?order_id={order_id}`,
+      return_url: `${config.frontendUrl}/profile?order_id={order_id}`,
     },
     order_note: `Atyant Mentorship - ${plan.title}`,
   };

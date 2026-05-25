@@ -37,4 +37,5 @@ export const config = {
     secretKey: process.env.CASHFREE_SECRET_KEY || '',
     environment: process.env.CASHFREE_ENVIRONMENT || process.env.CASHFREE_ENV || 'sandbox',
   },
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
 };
