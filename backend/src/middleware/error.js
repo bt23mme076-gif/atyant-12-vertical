@@ -16,9 +16,11 @@ export function errorHandler(err, req, res, next) { // eslint-disable-line no-un
   }
   // Mongoose duplicate key
   if (err.code === 11000) {
+    console.error('⚠️  Duplicate key error — field/value:', JSON.stringify(err.keyValue));
     return res.status(409).json({
       ok: false,
       error: 'Duplicate value',
+      field: Object.keys(err.keyValue || {})[0] || 'unknown',
       details: err.keyValue,
     });
   }
