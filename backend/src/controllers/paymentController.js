@@ -35,24 +35,51 @@ export const createOrderSchema = z.object({
 // POST /api/payments/orders — public, called when user clicks "Buy"
 export const createPaymentOrder = asyncHandler(async (req, res) => {
   const { planId, name, email, phone, mentorId } = req.body;
-  const { orderId, paymentSessionId, amount, plan } = await createOrder({ planId, name, email, phone });
 
-  // Persist in our DB
-  const payment = await Payment.create({
-    cashfreeOrderId: orderId,
-    paymentSessionId,
-    planId: plan.id,
-    planTitle: plan.title,
-    amount: plan.amount,
-    currency: 'INR',
-    name,
-    email,
-    phone,
-    mentorId: mentorId || undefined,
-    status: 'created',
-  });
+  // Retry up to 3 times in the rare case of a duplicate orderId collision
+  let orderResult;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      orderResult = await createOrder({ planId, name, email, phone });
+      break;
+    } catch (err) {
+      if (attempt === 3) throw err;
+      // Only retry on Cashfree-level duplicate order errors
+    }
+  }
 
-  // Create a lead row
+  const { orderId, paymentSessionId, amount, plan } = orderResult;
+
+  // Persist in our DB — retry on MongoDB duplicate key (11000)
+  let payment;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      payment = await Payment.create({
+        cashfreeOrderId: orderId,
+        paymentSessionId,
+        planId: plan.id,
+        planTitle: plan.title,
+        amount: plan.amount,
+        currency: 'INR',
+        name,
+        email,
+        phone,
+        mentorId: mentorId || undefined,
+        status: 'created',
+      });
+      break;
+    } catch (err) {
+      if (err.code === 11000 && attempt < 3) {
+        // Extremely rare collision — generate a fresh order and retry
+        const fresh = await createOrder({ planId, name, email, phone });
+        Object.assign(orderResult, fresh);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  // Create a lead row (email is not unique on Lead — no conflict possible)
   const lead = await Lead.create({
     name,
     email,
@@ -65,8 +92,8 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     ok: true,
-    orderId,
-    paymentSessionId,
+    orderId: payment.cashfreeOrderId,
+    paymentSessionId: payment.paymentSessionId,
     amount,
     plan: { id: plan.id, title: plan.title, amount: plan.amount },
     cashfreeEnvironment: config.cashfree.environment,
