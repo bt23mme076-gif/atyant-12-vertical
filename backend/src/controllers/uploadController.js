@@ -80,17 +80,25 @@ export const uploadIdDocHandler = async (req, res) => {
 
 export const serveIdDoc = async (req, res) => {
   try {
-    const mentorId = req.params.mentorId;
+    const param = req.params.mentorId;
     
-    // Auth check: Admin or the mentor owning the document
-    if (req.user.role !== 'admin' && req.user.id.toString() !== mentorId.toString()) {
-      return res.status(403).json({ error: 'Access denied. You can only view your own documents.' });
+    let mentor;
+    if (/^[a-fA-F0-9]{24}$/.test(param)) {
+      mentor = await User.findById(param);
+    } else {
+      mentor = await User.findOne({ idDocFilename: param });
     }
 
-    const mentor = await User.findById(mentorId);
-    
     if (!mentor || !mentor.idDocFilename) {
       return res.status(404).json({ error: 'No ID document on file' });
+    }
+
+    // Auth check: Admin or the mentor owning the document
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
+    const isOwner = req.user.id.toString() === mentor._id.toString();
+    
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: 'Access denied. You can only view your own documents.' });
     }
 
     const filePath = path.resolve(ID_DOC_DIR, mentor.idDocFilename);
@@ -109,8 +117,13 @@ export const serveIdDoc = async (req, res) => {
 
 export const verifyIdDoc = async (req, res) => {
   try {
-    const mentorId = req.params.mentorId;
-    const mentor = await User.findById(mentorId);
+    const param = req.params.mentorId;
+    let mentor;
+    if (/^[a-fA-F0-9]{24}$/.test(param)) {
+      mentor = await User.findById(param);
+    } else {
+      mentor = await User.findOne({ idDocFilename: param });
+    }
     
     if (!mentor) {
       return res.status(404).json({ error: 'Mentor not found' });
@@ -128,8 +141,13 @@ export const verifyIdDoc = async (req, res) => {
 
 export const rejectIdDoc = async (req, res) => {
   try {
-    const mentorId = req.params.mentorId;
-    const mentor = await User.findById(mentorId);
+    const param = req.params.mentorId;
+    let mentor;
+    if (/^[a-fA-F0-9]{24}$/.test(param)) {
+      mentor = await User.findById(param);
+    } else {
+      mentor = await User.findOne({ idDocFilename: param });
+    }
     
     if (!mentor) {
       return res.status(404).json({ error: 'Mentor not found' });

@@ -15,7 +15,7 @@ router.patch('/me', requireUser, updateProfile);
 router.get('/mentors', async (req, res) => {
   const { User } = await import('../models/User.js');
   const mentors = await User.find({ role: 'mentor' });
-  res.json({ mentors });
+  res.json({ mentors: mentors.map(m => m.toSafeJSON()) });
 });
 
 export default router;

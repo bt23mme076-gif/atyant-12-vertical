@@ -67,8 +67,8 @@ userSchema.methods.toSafeJSON = function () {
   const json = {
     id: this._id,
     email: this.email,
-    phone: this.phone,
-    name: this.name,
+    phone: this.phone || '',
+    name: this.name || '',
     role: this.role,
     premium: this.premium,
     premiumActivatedAt: this.premiumActivatedAt,
@@ -78,20 +78,20 @@ userSchema.methods.toSafeJSON = function () {
 
   // Only include mentor-specific fields if the user is a mentor
   if (this.role === 'mentor') {
-    json.college = this.college;
-    json.branch = this.branch;
-    json.cgpa = this.cgpa;
-    json.state = this.state;
-    json.category = this.category;
-    json.rank = this.rank;
-    json.categoryRank = this.categoryRank;
-    json.preferredLang = this.preferredLang;
-    json.gender = this.gender;
-    json.bundles = this.bundles;
-    json.bio = this.bio;
-    json.profilePhotoFilename = this.profilePhotoFilename;
-    json.idDocFilename = this.idDocFilename;
-    json.verificationStatus = this.verificationStatus;
+    json.college = this.college || '';
+    json.branch = this.branch || '';
+    json.cgpa = this.cgpa || null;
+    json.state = this.state || '';
+    json.category = this.category || '';
+    json.rank = this.rank || null;
+    json.categoryRank = this.categoryRank || null;
+    json.preferredLang = this.preferredLang || '';
+    json.gender = this.gender || '';
+    json.bundles = Array.isArray(this.bundles) ? this.bundles : [];
+    json.bio = this.bio || '';
+    json.profilePhotoFilename = this.profilePhotoFilename || '';
+    json.idDocFilename = this.idDocFilename || '';
+    json.verificationStatus = this.verificationStatus || 'none';
   }
 
   return json;
