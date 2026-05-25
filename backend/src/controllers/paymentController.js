@@ -48,18 +48,16 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
     }
   }
 
-  const { orderId, paymentSessionId, amount, plan } = orderResult;
-
   // Persist in our DB — retry on MongoDB duplicate key (11000)
   let payment;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       payment = await Payment.create({
-        cashfreeOrderId: orderId,
-        paymentSessionId,
-        planId: plan.id,
-        planTitle: plan.title,
-        amount: plan.amount,
+        cashfreeOrderId: orderResult.orderId,
+        paymentSessionId: orderResult.paymentSessionId,
+        planId: orderResult.plan.id,
+        planTitle: orderResult.plan.title,
+        amount: orderResult.amount,
         currency: 'INR',
         name,
         email,
@@ -71,8 +69,7 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
     } catch (err) {
       if (err.code === 11000 && attempt < 3) {
         // Extremely rare collision — generate a fresh order and retry
-        const fresh = await createOrder({ planId, name, email, phone });
-        Object.assign(orderResult, fresh);
+        orderResult = await createOrder({ planId, name, email, phone });
         continue;
       }
       throw err;
@@ -94,8 +91,8 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
     ok: true,
     orderId: payment.cashfreeOrderId,
     paymentSessionId: payment.paymentSessionId,
-    amount,
-    plan: { id: plan.id, title: plan.title, amount: plan.amount },
+    amount: orderResult.amount,
+    plan: { id: orderResult.plan.id, title: orderResult.plan.title, amount: orderResult.plan.amount },
     cashfreeEnvironment: config.cashfree.environment,
   });
 });
@@ -148,7 +145,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       id: payment._id,
       status: payment.status,
       planId: payment.planId,
-      amount: payment.amount,
+      amount: payment.amount * 100,
     },
   });
 });
@@ -199,5 +196,13 @@ export const getMyBookings = asyncHandler(async (req, res) => {
     .populate('mentorId', 'name college state rank bio profilePhotoFilename')
     .sort({ createdAt: -1 });
 
-  res.json({ ok: true, bookings });
+  const formattedBookings = bookings.map((b) => {
+    const obj = b.toObject();
+    return {
+      ...obj,
+      amount: obj.amount * 100,
+    };
+  });
+
+  res.json({ ok: true, bookings: formattedBookings });
 });

@@ -12,9 +12,17 @@ export async function connectDB() {
     try {
       await mongoose.connection.collection('users').dropIndex('email_1');
       console.log('Dropped old users email unique index successfully');
-    } catch (e) {
-      // Index might not exist, ignore
-    }
+    } catch (e) {}
+
+    try {
+      await mongoose.connection.collection('leads').dropIndex('email_1');
+      console.log('Dropped old leads email unique index successfully');
+    } catch (e) {}
+
+    try {
+      await mongoose.connection.collection('payments').dropIndex('email_1');
+      console.log('Dropped old payments email unique index successfully');
+    } catch (e) {}
 
     mongoose.connection.on('error', (err) => {
       console.error('MongoDB error:', err);
