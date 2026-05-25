@@ -98,12 +98,15 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
 });
 
 export const verifyPaymentSchema = z.object({
-  cashfreeOrderId: z.string().min(1),
+  cashfreeOrderId: z.string().min(1).optional(),
+  order_id: z.string().min(1).optional(),
+}).refine(data => data.cashfreeOrderId || data.order_id, {
+  message: "order_id or cashfreeOrderId is required"
 });
 
 // POST /api/payments/verify — called from frontend to check order status directly from Cashfree
 export const verifyPayment = asyncHandler(async (req, res) => {
-  const { cashfreeOrderId } = req.body;
+  const cashfreeOrderId = req.body.cashfreeOrderId || req.body.order_id;
 
   const orderDetails = await getOrderDetails(cashfreeOrderId);
   
@@ -136,6 +139,8 @@ export const verifyPayment = asyncHandler(async (req, res) => {
   if (user) {
     user.premium = true;
     user.premiumActivatedAt = new Date();
+    if (!user.phone && payment.phone) user.phone = payment.phone;
+    if (!user.name && payment.name) user.name = payment.name;
     await user.save();
   }
 
@@ -169,7 +174,15 @@ export const listPayments = asyncHandler(async (req, res) => {
     Payment.countDocuments(filter),
   ]);
 
-  res.json({ ok: true, page, limit, total, items });
+  const formattedItems = items.map(item => {
+    const obj = item.toObject();
+    return {
+      ...obj,
+      amount: obj.amount * 100
+    };
+  });
+
+  res.json({ ok: true, page, limit, total, items: formattedItems });
 });
 
 // GET /api/payments/my-bookings

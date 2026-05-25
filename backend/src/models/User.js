@@ -31,9 +31,14 @@ const userSchema = new mongoose.Schema(
     },
     // Mentor-specific fields
     college: { type: String, trim: true },
+    branch: { type: String, trim: true },
+    cgpa: { type: Number },
     state: { type: String, trim: true },
     category: { type: String, trim: true },
     rank: { type: Number },
+    categoryRank: { type: Number },
+    preferredLang: { type: String, trim: true },
+    gender: { type: String, trim: true },
     bundles: [{ type: String }],
     bio: { type: String, trim: true, maxLength: 500 },
     profilePhotoFilename: { type: String },
@@ -43,6 +48,8 @@ const userSchema = new mongoose.Schema(
       enum: ['pending', 'verified', 'rejected', 'none'],
       default: 'none',
     },
+    premium: { type: Boolean, default: false },
+    premiumActivatedAt: { type: Date },
     lastLoginAt: Date,
   },
   { timestamps: true }
@@ -63,6 +70,8 @@ userSchema.methods.toSafeJSON = function () {
     phone: this.phone,
     name: this.name,
     role: this.role,
+    premium: this.premium,
+    premiumActivatedAt: this.premiumActivatedAt,
     createdAt: this.createdAt,
     lastLoginAt: this.lastLoginAt,
   };
@@ -70,9 +79,14 @@ userSchema.methods.toSafeJSON = function () {
   // Only include mentor-specific fields if the user is a mentor
   if (this.role === 'mentor') {
     json.college = this.college;
+    json.branch = this.branch;
+    json.cgpa = this.cgpa;
     json.state = this.state;
     json.category = this.category;
     json.rank = this.rank;
+    json.categoryRank = this.categoryRank;
+    json.preferredLang = this.preferredLang;
+    json.gender = this.gender;
     json.bundles = this.bundles;
     json.bio = this.bio;
     json.profilePhotoFilename = this.profilePhotoFilename;

@@ -50,19 +50,32 @@ export const me = asyncHandler(async (req, res) => {
 });
 
 export const updateProfile = asyncHandler(async (req, res) => {
-  const { name, college, state, category, rank, bundles, bio } = req.body;
+  const { name, phone, email, college, state, category, rank, bundles, bio, branch, cgpa, categoryRank, preferredLang, gender } = req.body;
   
   const user = req.user;
   if (name !== undefined) user.name = name;
+  if (phone !== undefined) user.phone = phone;
+  if (email !== undefined) user.email = email;
   
   if (user.role === 'mentor') {
     if (college !== undefined) user.college = college;
+    if (branch !== undefined) user.branch = branch;
+    if (cgpa !== undefined) {
+      const parsedCgpa = parseFloat(cgpa);
+      user.cgpa = isNaN(parsedCgpa) ? undefined : parsedCgpa;
+    }
     if (state !== undefined) user.state = state;
     if (category !== undefined) user.category = category;
     if (rank !== undefined) {
       const parsedRank = parseInt(rank, 10);
       user.rank = isNaN(parsedRank) ? 0 : parsedRank;
     }
+    if (categoryRank !== undefined) {
+      const parsedCategoryRank = parseInt(categoryRank, 10);
+      user.categoryRank = isNaN(parsedCategoryRank) ? undefined : parsedCategoryRank;
+    }
+    if (preferredLang !== undefined) user.preferredLang = preferredLang;
+    if (gender !== undefined) user.gender = gender;
     if (bundles !== undefined) user.bundles = Array.isArray(bundles) ? bundles : [];
     if (bio !== undefined) user.bio = bio;
   }

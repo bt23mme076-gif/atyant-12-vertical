@@ -13,6 +13,7 @@ import chatRoutes from './routes/chat.js';
 import decisionRoutes from './routes/decision.js';
 import paymentRoutes from './routes/payments.js';
 import userRoutes from './routes/users.js';
+import adminRoutes from './routes/admin.js';
 import { webhook as paymentsWebhook } from './controllers/paymentController.js';
 
 const app = express();
@@ -72,6 +73,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/decision', decisionRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // 404 + error handler last
