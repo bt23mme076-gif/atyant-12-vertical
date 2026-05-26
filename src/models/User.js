@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema(
     preferredLang: { type: String, trim: true },
     gender: { type: String, trim: true },
     bundles: [{ type: String }],
-    bio: { type: String, trim: true, maxLength: 500 },
+    bio: { type: String, trim: true, maxLength: 5000 },
     profilePhotoFilename: { type: String },
     idDocFilename: { type: String },
     verificationStatus: {
