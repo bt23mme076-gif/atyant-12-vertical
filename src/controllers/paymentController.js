@@ -25,11 +25,11 @@ export const listPlans = asyncHandler(async (req, res) => {
 });
 
 export const createOrderSchema = z.object({
-  planId: z.enum(['quick-clarity', 'complete-guidance', 'dream-seat']),
+  planId: z.enum(['quick-clarity', 'starter-clarity', 'complete-guidance', 'complete-round', 'dream-seat', 'ultimate-peace']),
   name: z.string().min(1).max(120),
   email: z.string().email(),
   phone: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
-  mentorId: z.string().optional(),
+  mentorId: z.string().nullish().or(z.literal('')),
 });
 
 // POST /api/payments/orders — public, called when user clicks "Buy"
@@ -129,12 +129,22 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     await Lead.findByIdAndUpdate(payment.leadId, { status: 'converted' });
   }
 
-  // Find user and mark premium
+  // Find user and mark premium (support 10-digit, 91-prefixed and standard formats)
+  const orConditions = [
+    { email: payment.email.toLowerCase() },
+    { email: new RegExp(`^${payment.email}$`, 'i') }
+  ];
+  if (payment.phone) {
+    const rawPhone = payment.phone.replace(/[^\d]/g, '');
+    const tenDigit = rawPhone.slice(-10);
+    orConditions.push({ phone: tenDigit });
+    orConditions.push({ phone: `91${tenDigit}` });
+    orConditions.push({ phone: `+91${tenDigit}` });
+    orConditions.push({ phone: payment.phone });
+  }
+
   const user = await (await import('../models/User.js')).User.findOne({
-    $or: [
-      { phone: payment.phone },
-      { email: payment.email.toLowerCase() }
-    ]
+    $or: orConditions
   });
   if (user) {
     user.premium = true;
@@ -195,10 +205,16 @@ export const getMyBookings = asyncHandler(async (req, res) => {
   };
   
   if (user.phone) {
+    const rawPhone = user.phone.replace(/[^\d]/g, '');
+    const tenDigit = rawPhone.slice(-10); // Extract last 10 digits
+    query.$or.push({ phone: tenDigit });
+    query.$or.push({ phone: `91${tenDigit}` });
     query.$or.push({ phone: user.phone });
+    query.$or.push({ phone: `+91${tenDigit}` });
   }
   if (user.email) {
     query.$or.push({ email: user.email.toLowerCase() });
+    query.$or.push({ email: new RegExp(`^${user.email}$`, 'i') });
   }
   
   if (query.$or.length === 0) {
@@ -206,7 +222,7 @@ export const getMyBookings = asyncHandler(async (req, res) => {
   }
 
   const bookings = await Payment.find(query)
-    .populate('mentorId', 'name college state rank bio profilePhotoFilename')
+    .populate('mentorId', 'name phone college state rank bio profilePhotoFilename')
     .sort({ createdAt: -1 });
 
   const formattedBookings = bookings.map((b) => {
