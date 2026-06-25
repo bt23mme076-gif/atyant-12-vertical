@@ -25,7 +25,12 @@ export const listPlans = asyncHandler(async (req, res) => {
 });
 
 export const createOrderSchema = z.object({
-  planId: z.enum(['quick-clarity', 'starter-clarity', 'complete-guidance', 'complete-round', 'dream-seat', 'ultimate-peace']),
+  planId: z.enum([
+    // JEE Counselling Plans
+    'quick-clarity', 'starter-clarity', 'complete-guidance', 'complete-round', 'dream-seat', 'ultimate-peace',
+    // MHT-CET Counselling Plans
+    'college-clarity', 'admission-success', 'admission-career-growth',
+  ]),
   name: z.string().min(1).max(120),
   email: z.string().email(),
   phone: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),

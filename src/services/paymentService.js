@@ -2,12 +2,17 @@ import { config } from '../config/env.js';
 import { AppError } from '../utils/asyncHandler.js';
 
 export const PLANS = {
+  // JEE Counselling Plans
   'quick-clarity':     { id: 'quick-clarity',     title: 'Starter Clarity',          amount: 99 }, // Map quick-clarity to Starter Clarity (₹99)
   'starter-clarity':   { id: 'starter-clarity',   title: 'Starter Clarity',          amount: 99 },
   'complete-guidance': { id: 'complete-guidance', title: 'Complete Guidance',      amount: 399 },
   'complete-round':    { id: 'complete-round',    title: 'Complete Round Support',   amount: 899 },
   'dream-seat':        { id: 'dream-seat',        title: 'Complete Round Support',   amount: 899 }, // Map dream-seat to Complete Round Support (₹899)
   'ultimate-peace':    { id: 'ultimate-peace',    title: 'Ultimate Peace of Mind',    amount: 1299 },
+  // MHT-CET Counselling Plans
+  'college-clarity':        { id: 'college-clarity',        title: 'College Clarity',            amount: 999 },
+  'admission-success':      { id: 'admission-success',      title: 'Admission Success',          amount: 1999 },
+  'admission-career-growth':{ id: 'admission-career-growth',title: 'Admission + Career Growth',  amount: 4999 },
 };
 
 export function getPlan(planId) {
