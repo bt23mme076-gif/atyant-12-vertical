@@ -27,7 +27,7 @@ export const listPlans = asyncHandler(async (req, res) => {
 export const createOrderSchema = z.object({
   planId: z.enum([
     // JEE Counselling Plans
-    'quick-clarity', 'starter-clarity', 'complete-guidance', 'complete-round', 'dream-seat', 'ultimate-peace',
+    'complete-round', 'dream-seat', 'ultimate-peace',
     // MHT-CET Counselling Plans
     'college-clarity', 'admission-success', 'admission-career-growth',
   ]),
@@ -240,3 +240,4 @@ export const getMyBookings = asyncHandler(async (req, res) => {
 
   res.json({ ok: true, bookings: formattedBookings });
 });
+

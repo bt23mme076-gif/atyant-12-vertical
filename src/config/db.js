@@ -25,9 +25,9 @@ export async function connectDB() {
     } catch (e) {}
 
     // Background migration: automatically convert mentor bundles to standard canonical IDs
-    // - Converts ₹1799 (ultimate-peace) to standard ID with new ₹1299 student pricing
-    // - Converts ₹999 (complete-round) to standard ID with new ₹899 student pricing
-    // - Filters out ₹99 (starter-clarity) from mentors since it is platform-managed
+    // - Converts ultimate-peace to standard ID with new ₹1999 student pricing
+    // - Converts complete-round to standard ID with new ₹999 student pricing
+    // - Filters out starter-clarity (₹99) and complete-guidance (₹399) plans, which have been discontinued
     try {
       const UserModule = await import('../models/User.js');
       const User = UserModule.User;
@@ -43,7 +43,7 @@ export async function connectDB() {
               return null;
             }
             if (b === 'Complete Guidance' || b === 'complete-guidance') {
-              return 'complete-guidance';
+              return null;
             }
             if (b === 'Dream Seat Protection™' || b === 'dream-seat' || b === 'Complete Round Support' || b === 'complete-round') {
               return 'complete-round';
@@ -63,7 +63,7 @@ export async function connectDB() {
         }
       }
       if (updatedCount > 0) {
-        console.log(`[Migration] Successfully converted ${updatedCount} mentor profiles to standard ₹899 / ₹1299 pricing bundles!`);
+        console.log(`[Migration] Successfully converted ${updatedCount} mentor profiles to standard ₹999 / ₹1999 pricing bundles!`);
       }
     } catch (e) {
       console.error('Error during mentor bundle database migration:', e);
@@ -80,3 +80,4 @@ export async function connectDB() {
     process.exit(1);
   }
 }
+
