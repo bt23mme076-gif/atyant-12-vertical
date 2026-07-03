@@ -51,6 +51,37 @@ const userSchema = new mongoose.Schema(
     premium: { type: Boolean, default: false },
     premiumActivatedAt: { type: Date },
     lastLoginAt: Date,
+
+    // ─── Single-device login ───────────────────────────────────────────
+    // A random id minted on every successful login and embedded in the JWT
+    // as `sid`. Any older token whose `sid` no longer matches is rejected,
+    // which effectively logs the user out everywhere else.
+    activeSessionId: { type: String, default: null },
+    activeDeviceInfo: { type: String, trim: true, default: '' },
+
+    // ─── Batch / cohort ─────────────────────────────────────────────────
+    batch: { type: mongoose.Schema.Types.ObjectId, ref: 'Batch', default: null },
+
+    // ─── Streak tracking ────────────────────────────────────────────────
+    currentStreak: { type: Number, default: 0 },
+    longestStreak: { type: Number, default: 0 },
+    lastCheckInDate: { type: Date, default: null },
+
+    // ─── Roadmap progress ───────────────────────────────────────────────
+    roadmapProgress: [
+      {
+        pillar: { type: mongoose.Schema.Types.ObjectId, ref: 'RoadmapPillar' },
+        completedItems: [{ type: mongoose.Schema.Types.ObjectId }],
+        percent: { type: Number, default: 0 },
+        updatedAt: { type: Date, default: Date.now },
+      },
+    ],
+    overallProgress: { type: Number, default: 0 },
+
+    // ─── Referral system (phase 2 wiring, safe to keep dormant) ────────
+    referralCode: { type: String, unique: true, sparse: true, index: true },
+    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    referralCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
@@ -74,6 +105,13 @@ userSchema.methods.toSafeJSON = function () {
     premiumActivatedAt: this.premiumActivatedAt,
     createdAt: this.createdAt,
     lastLoginAt: this.lastLoginAt,
+    batch: this.batch || null,
+    currentStreak: this.currentStreak || 0,
+    longestStreak: this.longestStreak || 0,
+    lastCheckInDate: this.lastCheckInDate || null,
+    overallProgress: this.overallProgress || 0,
+    referralCode: this.referralCode || '',
+    referralCount: this.referralCount || 0,
   };
 
   // Only include mentor-specific fields if the user is a mentor

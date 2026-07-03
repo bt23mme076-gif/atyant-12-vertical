@@ -28,3 +28,12 @@ export const decisionLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
 });
+
+// Payment verification — public/guest-accessible and takes an arbitrary
+// order id, so it's an easy target for enumeration/probing. Same shape as
+// chatLimiter: tight per-IP cap on a cheap-but-abusable endpoint.
+export const paymentVerifyLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { ok: false, error: 'Too many verification attempts. Slow down a bit.' },
+});

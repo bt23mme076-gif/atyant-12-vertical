@@ -6,11 +6,13 @@ import {
   serveIdDoc,
   verifyIdDoc,
   rejectIdDoc,
-  deleteIdDocHandler
+  deleteIdDocHandler,
+  uploadRoadmapContentHandler,
+  serveRoadmapContent,
 } from '../controllers/uploadController.js';
 import { requireUser, requireAdmin } from '../middleware/auth.js';
 
-import { uploadProfilePhoto, uploadIdDoc } from '../utils/uploadConfig.js';
+import { uploadProfilePhoto, uploadIdDoc, uploadRoadmapContent } from '../utils/uploadConfig.js';
 
 const router = express.Router();
 
@@ -38,5 +40,12 @@ router.delete('/id-doc', requireUser, deleteIdDocHandler);
 router.get('/id-doc/:mentorId', requireUser, serveIdDoc);
 router.patch('/id-doc/:mentorId/verify', requireAdmin, verifyIdDoc);
 router.patch('/id-doc/:mentorId/reject', requireAdmin, rejectIdDoc);
+
+// Admin uploads a document/video for the Roadmap (pillar content / FAQ
+// videos). Publicly served once attached, same convention as profile
+// photos — the admin panel calls this first, then saves the returned URL
+// onto a RoadmapItem/FaqVideo via /api/admin/... CRUD endpoints.
+router.post('/roadmap-content', requireAdmin, multerHandler(uploadRoadmapContent.single('file')), uploadRoadmapContentHandler);
+router.get('/roadmap-content/:filename', serveRoadmapContent);
 
 export default router;

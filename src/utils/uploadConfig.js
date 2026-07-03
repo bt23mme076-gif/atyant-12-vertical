@@ -7,9 +7,10 @@ import { AppError } from './asyncHandler.js';
 export const BASE_UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
 export const PROFILE_PHOTO_DIR = path.join(BASE_UPLOAD_DIR, 'profile-photos');
 export const ID_DOC_DIR = path.join(BASE_UPLOAD_DIR, 'id-docs');
+export const ROADMAP_CONTENT_DIR = path.join(BASE_UPLOAD_DIR, 'roadmap-content');
 
 // Ensure dirs exist
-[PROFILE_PHOTO_DIR, ID_DOC_DIR].forEach((dir) => {
+[PROFILE_PHOTO_DIR, ID_DOC_DIR, ROADMAP_CONTENT_DIR].forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
@@ -63,4 +64,34 @@ export const uploadIdDoc = multer({
   storage: idDocStorage,
   fileFilter: idDocFilter,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+});
+
+// ─── Roadmap content (admin-uploaded documents/videos) ─────────────────
+// Used by the team to attach real PDFs/videos to a RoadmapItem or FAQ
+// video from the admin panel. Admins can also just paste an external URL
+// (e.g. a YouTube link) instead of uploading — this is only needed when
+// they want to host the file directly.
+
+export const roadmapContentStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, ROADMAP_CONTENT_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${uuid()}${ext}`);
+  },
+});
+
+export const roadmapContentFilter = (req, file, cb) => {
+  const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.mp4', '.mov', '.webm', '.jpg', '.jpeg', '.png'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowed.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new AppError('Unsupported file type. Allowed: PDF, Word, PowerPoint, MP4/MOV/WEBM video, or JPG/PNG.', 400), false);
+  }
+};
+
+export const uploadRoadmapContent = multer({
+  storage: roadmapContentStorage,
+  fileFilter: roadmapContentFilter,
+  limits: { fileSize: 200 * 1024 * 1024 }, // 200 MB — generous enough for short videos
 });

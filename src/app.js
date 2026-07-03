@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import morgan from 'morgan';
 
 import { config } from './config/env.js';
@@ -23,16 +24,20 @@ app.set('trust proxy', 1); // honour X-Forwarded-For when behind a proxy
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+// gzip/brotli-negotiated response compression. Mounted after helmet (so
+// security headers are set first) and before any routes, so every JSON/HTML
+// response gets compressed. Cheap CPU cost, meaningful bandwidth/latency win
+// on the larger JSON payloads (mentor lists, roadmap content, etc.).
+app.use(compression());
 app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 
+// Origins now come from config.corsOrigins (parsed from CORS_ORIGINS in
+// env.js) instead of being hardcoded here, so allowed origins can change
+// per-deploy without a code change. Make sure CORS_ORIGINS is set in every
+// environment — see .env.example for the production defaults.
 app.use(
   cors({
-    origin: [
-      'https://atyantjee.vercel.app', // added for production frontend
-      'https://jee.atyant.in',        // new production domain
-      'http://localhost:3000', // keep for local dev
-      'http://localhost:5173', // if using Vite
-    ],
+    origin: config.corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -64,6 +69,7 @@ app.get('/', (req, res) => {
 });
 
 import uploadRoutes from './routes/upload.js';
+import roadmapRoutes from './routes/roadmap.js';
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -75,6 +81,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/roadmap', roadmapRoutes);
 
 // 404 + error handler last
 app.use(notFoundHandler);

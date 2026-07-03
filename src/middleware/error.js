@@ -35,6 +35,9 @@ export function errorHandler(err, req, res, next) { // eslint-disable-line no-un
     error: err.message || 'Internal server error',
   };
   if (err.details) body.details = err.details;
+  // String error codes (e.g. 'SESSION_INVALIDATED') are ours; numeric codes
+  // like Mongo's 11000 are handled above and shouldn't leak here.
+  if (err.code && typeof err.code === 'string') body.code = err.code;
   if (config.nodeEnv !== 'production' && statusCode >= 500) {
     body.stack = err.stack;
   }

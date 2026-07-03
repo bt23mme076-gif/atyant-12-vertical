@@ -24,50 +24,19 @@ export async function connectDB() {
       console.log('Dropped old payments email unique index successfully');
     } catch (e) {}
 
-    // Background migration: automatically convert mentor bundles to standard canonical IDs
-    // - Converts ultimate-peace to standard ID with new ₹1999 student pricing
-    // - Converts complete-round to standard ID with new ₹999 student pricing
-    // - Filters out starter-clarity (₹99) and complete-guidance (₹399) plans, which have been discontinued
-    try {
-      const UserModule = await import('../models/User.js');
-      const User = UserModule.User;
-      const mentors = await User.find({ role: 'mentor' });
-      
-      let updatedCount = 0;
-      for (const mentor of mentors) {
-        if (Array.isArray(mentor.bundles)) {
-          const originalStr = JSON.stringify(mentor.bundles);
-          
-          let newBundles = mentor.bundles.map(b => {
-            if (b === 'Quick Clarity' || b === 'quick-clarity' || b === 'Starter Clarity' || b === 'starter-clarity') {
-              return null;
-            }
-            if (b === 'Complete Guidance' || b === 'complete-guidance') {
-              return null;
-            }
-            if (b === 'Dream Seat Protection™' || b === 'dream-seat' || b === 'Complete Round Support' || b === 'complete-round') {
-              return 'complete-round';
-            }
-            if (b === 'Ultimate Peace of Mind' || b === 'ultimate-peace') {
-              return 'ultimate-peace';
-            }
-            return b;
-          }).filter(Boolean);
-
-          newBundles = [...new Set(newBundles)];
-
-          if (JSON.stringify(newBundles) !== originalStr) {
-            await User.updateOne({ _id: mentor._id }, { $set: { bundles: newBundles } });
-            updatedCount++;
-          }
-        }
-      }
-      if (updatedCount > 0) {
-        console.log(`[Migration] Successfully converted ${updatedCount} mentor profiles to standard ₹999 / ₹1999 pricing bundles!`);
-      }
-    } catch (e) {
-      console.error('Error during mentor bundle database migration:', e);
-    }
+    // NOTE: these three dropIndex calls are still here because I couldn't
+    // confirm from the sandbox whether the `email_1` unique indexes have
+    // actually been dropped in your production database — deleting this
+    // recovery logic without checking first could silently reintroduce old
+    // "duplicate key on email" crashes on a fresh/restored DB. Each call is
+    // already a cheap no-op (empty catch) once the index is gone, so leaving
+    // them costs nothing at boot. Please confirm production is clean and I'll
+    // remove these in a follow-up pass.
+    //
+    // The mentor-bundle migration that used to run here on every boot has
+    // moved to src/scripts/migrateMentorBundles.js — run it manually
+    // (`node src/scripts/migrateMentorBundles.js`) instead of paying its cost
+    // on every server restart.
 
     mongoose.connection.on('error', (err) => {
       console.error('MongoDB error:', err);

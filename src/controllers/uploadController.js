@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import { User } from '../models/User.js';
-import { PROFILE_PHOTO_DIR, ID_DOC_DIR } from '../utils/uploadConfig.js';
+import { PROFILE_PHOTO_DIR, ID_DOC_DIR, ROADMAP_CONTENT_DIR } from '../utils/uploadConfig.js';
 
 export const uploadProfilePhotoHandler = async (req, res) => {
   try {
@@ -81,13 +81,18 @@ export const uploadIdDocHandler = async (req, res) => {
 export const serveIdDoc = async (req, res) => {
   try {
     const param = req.params.mentorId;
-    
-    let mentor;
-    if (/^[a-fA-F0-9]{24}$/.test(param)) {
-      mentor = await User.findById(param);
-    } else {
-      mentor = await User.findOne({ idDocFilename: param });
+
+    // Resolve strictly by Mongo _id — the old `idDocFilename` fallback let
+    // anyone who guessed/observed a filename fetch that document without
+    // needing to know (or be authorized for) the owning mentor's real id.
+    // Confirmed atyantjee02FE/src/utils/api.js's viewIdDocAdmin/
+    // verifyIdDocAdmin/rejectIdDocAdmin already pass mentor._id (see
+    // AtyantLoginPage.jsx's handleViewDoc/handleVerifyDoc/handleRejectDoc),
+    // so no frontend change is needed for this fix.
+    if (!/^[a-fA-F0-9]{24}$/.test(param)) {
+      return res.status(400).json({ error: 'Invalid mentor id' });
     }
+    const mentor = await User.findById(param);
 
     if (!mentor || !mentor.idDocFilename) {
       return res.status(404).json({ error: 'No ID document on file' });
@@ -118,13 +123,13 @@ export const serveIdDoc = async (req, res) => {
 export const verifyIdDoc = async (req, res) => {
   try {
     const param = req.params.mentorId;
-    let mentor;
-    if (/^[a-fA-F0-9]{24}$/.test(param)) {
-      mentor = await User.findById(param);
-    } else {
-      mentor = await User.findOne({ idDocFilename: param });
+    // Resolve strictly by Mongo _id — see serveIdDoc for why the filename
+    // fallback was removed.
+    if (!/^[a-fA-F0-9]{24}$/.test(param)) {
+      return res.status(400).json({ error: 'Invalid mentor id' });
     }
-    
+    const mentor = await User.findById(param);
+
     if (!mentor) {
       return res.status(404).json({ error: 'Mentor not found' });
     }
@@ -142,13 +147,13 @@ export const verifyIdDoc = async (req, res) => {
 export const rejectIdDoc = async (req, res) => {
   try {
     const param = req.params.mentorId;
-    let mentor;
-    if (/^[a-fA-F0-9]{24}$/.test(param)) {
-      mentor = await User.findById(param);
-    } else {
-      mentor = await User.findOne({ idDocFilename: param });
+    // Resolve strictly by Mongo _id — see serveIdDoc for why the filename
+    // fallback was removed.
+    if (!/^[a-fA-F0-9]{24}$/.test(param)) {
+      return res.status(400).json({ error: 'Invalid mentor id' });
     }
-    
+    const mentor = await User.findById(param);
+
     if (!mentor) {
       return res.status(404).json({ error: 'Mentor not found' });
     }
@@ -191,4 +196,30 @@ export const deleteIdDocHandler = async (req, res) => {
     console.error('Delete ID doc error:', error);
     res.status(500).json({ error: 'Failed to delete ID document' });
   }
+};
+
+// ─── Roadmap content (admin panel) ───────────────────────────────────────
+// Generic upload for RoadmapItem / FaqVideo attachments. Returns a URL the
+// admin panel then saves onto the item/FAQ record via the normal CRUD
+// endpoints — decoupled from any particular content type.
+export const uploadRoadmapContentHandler = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file received' });
+  }
+  res.json({
+    url: `/api/upload/roadmap-content/${req.file.filename}`,
+    filename: req.file.filename,
+  });
+};
+
+export const serveRoadmapContent = (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.resolve(ROADMAP_CONTENT_DIR, filename);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(filePath);
 };
