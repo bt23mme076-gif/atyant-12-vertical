@@ -44,7 +44,6 @@ export const adminDeletePillar = asyncHandler(async (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── Items (documents/videos/tasks within a pillar) ──────────────────
 export const adminListItems = asyncHandler(async (req, res) => {
   const filter = req.query.pillar ? { pillar: req.query.pillar } : {};
   const items = await RoadmapItem.find(filter).sort({ order: 1 });

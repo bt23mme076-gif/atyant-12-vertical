@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { signup, login, logout, me, updateProfile, signupSchema, loginSchema, updateProfileSchema } from '../controllers/userController.js';
+import { signup, login, logout, me, updateProfile, signupSchema, loginSchema, updateProfileSchema, googleAuth, googleSignup, googleAuthSchema, googleSignupSchema } from '../controllers/userController.js';
 import { validate } from '../middleware/validate.js';
 import { requireUser } from '../middleware/auth.js';
 import { loginLimiter } from '../middleware/rateLimiters.js';
@@ -8,6 +8,8 @@ const router = Router();
 
 router.post('/signup', validate(signupSchema), signup);
 router.post('/login', loginLimiter, validate(loginSchema), login);
+router.post('/google-auth', validate(googleAuthSchema), googleAuth);
+router.post('/google-signup', validate(googleSignupSchema), googleSignup);
 router.post('/logout', requireUser, logout);
 router.get('/me', requireUser, me);
 router.patch('/me', requireUser, validate(updateProfileSchema), updateProfile);

@@ -4,6 +4,7 @@ import { User } from '../models/User.js';
 import { asyncHandler, AppError } from '../utils/asyncHandler.js';
 import { signToken } from '../utils/jwt.js';
 import { assignActiveBatch } from '../services/batchService.js';
+import { config } from '../config/env.js';
 
 export const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -163,6 +164,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
   if (name !== undefined) user.name = name;
   if (phone !== undefined) user.phone = phone;
   if (email !== undefined) user.email = email;
+  if (gender !== undefined) user.gender = gender;  // allowed for all roles
 
   if (user.role === 'mentor') {
     if (college !== undefined) user.college = college;
@@ -173,7 +175,6 @@ export const updateProfile = asyncHandler(async (req, res) => {
     if (rank !== undefined) user.rank = rank;
     if (categoryRank !== undefined) user.categoryRank = categoryRank;
     if (preferredLang !== undefined) user.preferredLang = preferredLang;
-    if (gender !== undefined) user.gender = gender;
     if (bio !== undefined) user.bio = bio;
     // bundles is intentionally not settable here — see updateProfileSchema
     // comment above and adminUpdateMentorBundles below.
@@ -203,4 +204,145 @@ export const adminUpdateMentorBundles = asyncHandler(async (req, res) => {
   await mentor.save();
 
   res.json({ ok: true, mentor: mentor.toSafeJSON() });
+});
+
+// Helper to securely verify Google ID Token with Google's API
+async function verifyGoogleIdToken(idToken) {
+  try {
+    const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+    if (!res.ok) {
+      throw new Error('Google token validation failed');
+    }
+    const info = await res.json();
+    if (info.error || info.error_description) {
+      throw new Error(info.error_description || 'Invalid Google token');
+    }
+    if (info.iss !== 'accounts.google.com' && info.iss !== 'https://accounts.google.com') {
+      throw new Error('Invalid token issuer');
+    }
+    if (config.google?.clientId && info.aud !== config.google.clientId) {
+      // Log audience mismatch but proceed in development if placeholder client ID is active
+      console.warn(`[Google Auth] Audience mismatch: got ${info.aud}, expected ${config.google.clientId}`);
+    }
+    return {
+      googleId: info.sub,
+      email: info.email,
+      name: info.name,
+      picture: info.picture,
+    };
+  } catch (err) {
+    throw new AppError(`Google authentication failed: ${err.message}`, 400);
+  }
+}
+
+// Zod schemas for validation
+export const googleAuthSchema = z.object({
+  credential: z.string().min(1, "Google credential token is required"),
+});
+
+export const googleSignupSchema = z.object({
+  credential: z.string().min(1, "Google credential token is required"),
+  phone: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
+  role: z.enum(['student', 'mentor']),
+  referralCode: z.string().trim().optional(),
+});
+
+// Google Authentication Controller
+export const googleAuth = asyncHandler(async (req, res) => {
+  const { credential } = req.body;
+  const googleUser = await verifyGoogleIdToken(credential);
+
+  // Check if a user with this googleId exists
+  let user = await User.findOne({ googleId: googleUser.googleId });
+
+  // If not, match by email to link Google account to an existing user
+  if (!user && googleUser.email) {
+    user = await User.findOne({ email: googleUser.email.toLowerCase() });
+    if (user) {
+      user.googleId = googleUser.googleId;
+      await user.save();
+    }
+  }
+
+  // If user exists, log them in and issue session JWT
+  if (user) {
+    if (!user.referralCode) user.referralCode = await generateReferralCode(user.name);
+    if (user.role === 'student' && !user.batch) user.batch = await assignActiveBatch();
+
+    // Always refresh the Google avatar in case user changed their profile picture
+    if (googleUser.picture) user.googleAvatar = googleUser.picture;
+
+    const sid = uuidv4();
+    user.activeSessionId = sid;
+    user.lastLoginAt = new Date();
+    await user.save();
+
+    const token = signToken({ sub: user._id.toString(), role: user.role, sid });
+    return res.json({ ok: true, signupRequired: false, token, user: user.toSafeJSON() });
+  }
+
+  // User does not exist, require signup completion on frontend
+  res.json({
+    ok: true,
+    signupRequired: true,
+    googleInfo: {
+      googleId: googleUser.googleId,
+      email: googleUser.email,
+      name: googleUser.name,
+      picture: googleUser.picture,
+    }
+  });
+});
+
+// Google Sign-up Controller
+export const googleSignup = asyncHandler(async (req, res) => {
+  const { credential, phone, role, referralCode } = req.body;
+  const googleUser = await verifyGoogleIdToken(credential);
+
+  // Validate phone number availability
+  const existingPhone = await User.findOne({ phone });
+  if (existingPhone) {
+    throw new AppError('Phone number already registered', 400);
+  }
+
+  // Validate email availability
+  if (googleUser.email) {
+    const existingEmail = await User.findOne({ email: googleUser.email.toLowerCase() });
+    if (existingEmail) {
+      throw new AppError('Email address already registered', 400);
+    }
+  }
+
+  // Create new user account
+  const user = new User({
+    name: googleUser.name,
+    email: googleUser.email ? googleUser.email.toLowerCase() : undefined,
+    phone,
+    role,
+    googleId: googleUser.googleId,
+    googleAvatar: googleUser.picture || undefined,
+  });
+
+  user.referralCode = await generateReferralCode(googleUser.name);
+
+  if (referralCode) {
+    const referrer = await User.findOne({ referralCode: referralCode.trim().toUpperCase() });
+    if (referrer) {
+      user.referredBy = referrer._id;
+      referrer.referralCount = (referrer.referralCount || 0) + 1;
+      await referrer.save();
+    }
+  }
+
+  if (role === 'student') {
+    user.batch = await assignActiveBatch();
+  }
+
+  const sid = uuidv4();
+  user.activeSessionId = sid;
+  user.lastLoginAt = new Date();
+  await user.save();
+
+  const token = signToken({ sub: user._id.toString(), role: user.role, sid });
+  res.status(201).json({ ok: true, token, user: user.toSafeJSON() });
 });

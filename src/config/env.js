@@ -38,6 +38,9 @@ export const config = {
     environment: process.env.CASHFREE_ENVIRONMENT || process.env.CASHFREE_ENV || 'sandbox',
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+  },
   referral: {
     // How many successful referrals a student needs before referral-gated
     // roadmap content unlocks. Override with REFERRAL_UNLOCK_THRESHOLD.

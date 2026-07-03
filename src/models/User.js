@@ -5,14 +5,22 @@ const userSchema = new mongoose.Schema(
   {
     phone: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true,
       trim: true,
       index: true,
     },
     passwordHash: {
       type: String,
-      required: true,
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    googleAvatar: {
+      type: String, // URL to Google profile picture
     },
     name: {
       type: String,
@@ -112,6 +120,8 @@ userSchema.methods.toSafeJSON = function () {
     overallProgress: this.overallProgress || 0,
     referralCode: this.referralCode || '',
     referralCount: this.referralCount || 0,
+    googleAvatar: this.googleAvatar || '',
+    gender: this.gender || '',   // shared field — applies to all roles
   };
 
   // Only include mentor-specific fields if the user is a mentor
@@ -124,7 +134,6 @@ userSchema.methods.toSafeJSON = function () {
     json.rank = this.rank || null;
     json.categoryRank = this.categoryRank || null;
     json.preferredLang = this.preferredLang || '';
-    json.gender = this.gender || '';
     json.bundles = Array.isArray(this.bundles) ? this.bundles : [];
     json.bio = this.bio || '';
     json.profilePhotoFilename = this.profilePhotoFilename || '';
