@@ -10,6 +10,7 @@ import {
   adminListItems, adminCreateItem, adminUpdateItem, adminDeleteItem,
   adminListCareerPaths, adminCreateCareerPath, adminUpdateCareerPath, adminDeleteCareerPath,
   adminListFaqVideos, adminCreateFaqVideo, adminUpdateFaqVideo, adminDeleteFaqVideo,
+  adminListQuizQuestions, adminCreateQuizQuestion, adminUpdateQuizQuestion, adminDeleteQuizQuestion,
 } from '../controllers/adminRoadmapController.js';
 
 const router = Router();
@@ -75,5 +76,11 @@ router.get('/faq-videos', requireAdmin, adminListFaqVideos);
 router.post('/faq-videos', requireAdmin, adminCreateFaqVideo);
 router.patch('/faq-videos/:id', requireAdmin, adminUpdateFaqVideo);
 router.delete('/faq-videos/:id', requireAdmin, adminDeleteFaqVideo);
+
+// ─── Quiz question management ───────────────────────────────────────
+router.get('/quiz-questions', requireAdmin, adminListQuizQuestions);
+router.post('/quiz-questions', requireAdmin, adminCreateQuizQuestion);
+router.patch('/quiz-questions/:id', requireAdmin, adminUpdateQuizQuestion);
+router.delete('/quiz-questions/:id', requireAdmin, adminDeleteQuizQuestion);
 
 export default router;

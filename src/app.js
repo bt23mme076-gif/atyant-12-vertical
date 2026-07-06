@@ -70,6 +70,8 @@ app.get('/', (req, res) => {
 
 import uploadRoutes from './routes/upload.js';
 import roadmapRoutes from './routes/roadmap.js';
+import careerRoutes from './routes/careers.js';
+import quizRoutes from './routes/quiz.js';
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -82,6 +84,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/roadmap', roadmapRoutes);
+app.use('/api/careers', careerRoutes);
+app.use('/api/quiz', quizRoutes);
 
 // 404 + error handler last
 app.use(notFoundHandler);

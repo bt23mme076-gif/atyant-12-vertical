@@ -2,6 +2,7 @@ import { RoadmapPillar } from '../models/RoadmapPillar.js';
 import { RoadmapItem } from '../models/RoadmapItem.js';
 import { CareerPath } from '../models/CareerPath.js';
 import { FaqVideo } from '../models/FaqVideo.js';
+import { QuizQuestion } from '../models/QuizQuestion.js';
 import { asyncHandler, AppError } from '../utils/asyncHandler.js';
 
 // Everything here is mounted behind requireAdmin in routes/admin.js. Content
@@ -110,12 +111,27 @@ export const adminCreateCareerPath = asyncHandler(async (req, res) => {
 export const adminUpdateCareerPath = asyncHandler(async (req, res) => {
   const path = await CareerPath.findById(req.params.id);
   if (!path) throw new AppError('Career path not found', 404);
-  const { title, colorKey, order, isFeatured, isPublished } = req.body;
+  const {
+    title, colorKey, order, isFeatured, isPublished,
+    // Rich content fields
+    tagline, snapshot, roadmap, skillTree, realStories,
+    entryPoints, commonMistakes, resources, pivotOptions, relatedPaths,
+  } = req.body;
   if (title !== undefined) path.title = title;
   if (colorKey !== undefined) path.colorKey = colorKey;
   if (order !== undefined) path.order = order;
   if (isFeatured !== undefined) path.isFeatured = isFeatured;
   if (isPublished !== undefined) path.isPublished = isPublished;
+  if (tagline !== undefined) path.tagline = tagline;
+  if (snapshot !== undefined) path.snapshot = snapshot;
+  if (roadmap !== undefined) path.roadmap = roadmap;
+  if (skillTree !== undefined) path.skillTree = skillTree;
+  if (realStories !== undefined) path.realStories = realStories;
+  if (entryPoints !== undefined) path.entryPoints = entryPoints;
+  if (commonMistakes !== undefined) path.commonMistakes = commonMistakes;
+  if (resources !== undefined) path.resources = resources;
+  if (pivotOptions !== undefined) path.pivotOptions = pivotOptions;
+  if (relatedPaths !== undefined) path.relatedPaths = relatedPaths;
   await path.save();
   res.json({ ok: true, careerPath: path.toSafeJSON() });
 });
@@ -164,5 +180,41 @@ export const adminDeleteFaqVideo = asyncHandler(async (req, res) => {
   const video = await FaqVideo.findById(req.params.id);
   if (!video) throw new AppError('FAQ video not found', 404);
   await video.deleteOne();
+  res.json({ ok: true });
+});
+
+// ─── Quiz Questions (admin CRUD) ──────────────────────────────────────
+export const adminListQuizQuestions = asyncHandler(async (req, res) => {
+  const questions = await QuizQuestion.find().sort({ order: 1 });
+  res.json({ ok: true, questions });
+});
+
+export const adminCreateQuizQuestion = asyncHandler(async (req, res) => {
+  const { id, order, question, subtext, type, options } = req.body;
+  if (!id || !question) throw new AppError('id and question are required', 400);
+  const existing = await QuizQuestion.findOne({ id });
+  if (existing) throw new AppError('A question with this id already exists', 409);
+  const q = await QuizQuestion.create({ id, order, question, subtext, type, options });
+  res.status(201).json({ ok: true, question: q });
+});
+
+export const adminUpdateQuizQuestion = asyncHandler(async (req, res) => {
+  const q = await QuizQuestion.findById(req.params.id);
+  if (!q) throw new AppError('Question not found', 404);
+  const { order, question, subtext, type, options, isActive } = req.body;
+  if (order !== undefined) q.order = order;
+  if (question !== undefined) q.question = question;
+  if (subtext !== undefined) q.subtext = subtext;
+  if (type !== undefined) q.type = type;
+  if (options !== undefined) q.options = options;
+  if (isActive !== undefined) q.isActive = isActive;
+  await q.save();
+  res.json({ ok: true, question: q });
+});
+
+export const adminDeleteQuizQuestion = asyncHandler(async (req, res) => {
+  const q = await QuizQuestion.findById(req.params.id);
+  if (!q) throw new AppError('Question not found', 404);
+  await q.deleteOne();
   res.json({ ok: true });
 });
