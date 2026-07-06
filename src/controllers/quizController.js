@@ -2,6 +2,7 @@ import { QuizQuestion } from '../models/QuizQuestion.js';
 import { QuizResult } from '../models/QuizResult.js';
 import { CareerPath } from '../models/CareerPath.js';
 import { asyncHandler, AppError } from '../utils/asyncHandler.js';
+import { sendQuizResultsEmail } from '../utils/email.js';
 
 // ─── GET /api/quiz/questions ──────────────────────────────────────────────────
 export const getQuizQuestions = asyncHandler(async (req, res) => {
@@ -120,6 +121,11 @@ export const updateResultEmail = asyncHandler(async (req, res) => {
     { new: true }
   );
   if (!result) throw new AppError('Quiz result not found', 404);
+
+  // Send the email matches (non-blocking)
+  sendQuizResultsEmail(email, result.topMatches).catch((err) => {
+    console.error('❌ Failed to send quiz results email:', err.message);
+  });
 
   res.json({ ok: true, result: result.toSafeJSON() });
 });

@@ -46,4 +46,11 @@ export const config = {
     // roadmap content unlocks. Override with REFERRAL_UNLOCK_THRESHOLD.
     unlockThreshold: Number(process.env.REFERRAL_UNLOCK_THRESHOLD) || 3,
   },
+  mail: {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: Number(process.env.SMTP_PORT) || 587,
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || '"ATYANT Career Engine" <no-reply@atyant.in>',
+  },
 };
