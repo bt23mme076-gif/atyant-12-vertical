@@ -1,4 +1,5 @@
 import { CareerPath } from '../models/CareerPath.js';
+import { CareerPathItem } from '../models/CareerPathItem.js';
 import { asyncHandler, AppError } from '../utils/asyncHandler.js';
 
 // GET /api/careers — list all published paths (lightweight summary)
@@ -14,7 +15,14 @@ export const getCareer = asyncHandler(async (req, res) => {
   const { slug } = req.params;
   const career = await CareerPath.findOne({ slug, isPublished: true });
   if (!career) throw new AppError('Career path not found', 404);
-  res.json({ ok: true, career: career.toSafeJSON() });
+
+  const items = await CareerPathItem.find({ careerPath: career._id, isPublished: true }).sort({ order: 1 });
+
+  res.json({
+    ok: true,
+    career: career.toSafeJSON(),
+    items: items.map((i) => i.toSafeJSON())
+  });
 });
 
 // GET /api/careers/:slug/related — derived from pivotOptions + relatedPaths
