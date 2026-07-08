@@ -1,6 +1,7 @@
 import { RoadmapPillar } from '../models/RoadmapPillar.js';
 import { RoadmapItem } from '../models/RoadmapItem.js';
 import { CareerPath } from '../models/CareerPath.js';
+import { CareerPathItem } from '../models/CareerPathItem.js';
 import { FaqVideo } from '../models/FaqVideo.js';
 import { QuizQuestion } from '../models/QuizQuestion.js';
 import { asyncHandler, AppError } from '../utils/asyncHandler.js';
@@ -216,5 +217,51 @@ export const adminDeleteQuizQuestion = asyncHandler(async (req, res) => {
   const q = await QuizQuestion.findById(req.params.id);
   if (!q) throw new AppError('Question not found', 404);
   await q.deleteOne();
+  res.json({ ok: true });
+});
+
+// ─── Career Path Items (video/doc/article/task/quiz per career path) ─────
+export const adminListCareerPathItems = asyncHandler(async (req, res) => {
+  const filter = req.query.careerPath ? { careerPath: req.query.careerPath } : {};
+  const items = await CareerPathItem.find(filter).sort({ order: 1 });
+  res.json({ ok: true, items: items.map((i) => i.toSafeJSON()) });
+});
+
+export const adminCreateCareerPathItem = asyncHandler(async (req, res) => {
+  const { careerPath, title, description, type, url, durationLabel, order, isPublished } = req.body;
+  if (!careerPath || !title) throw new AppError('careerPath and title are required', 400);
+  const item = await CareerPathItem.create({
+    careerPath,
+    title,
+    description,
+    type,
+    url,
+    durationLabel,
+    order,
+    isPublished,
+    uploadedBy: req.admin._id,
+  });
+  res.status(201).json({ ok: true, item: item.toSafeJSON() });
+});
+
+export const adminUpdateCareerPathItem = asyncHandler(async (req, res) => {
+  const item = await CareerPathItem.findById(req.params.id);
+  if (!item) throw new AppError('Career path item not found', 404);
+  const { title, description, type, url, durationLabel, order, isPublished } = req.body;
+  if (title !== undefined) item.title = title;
+  if (description !== undefined) item.description = description;
+  if (type !== undefined) item.type = type;
+  if (url !== undefined) item.url = url;
+  if (durationLabel !== undefined) item.durationLabel = durationLabel;
+  if (order !== undefined) item.order = order;
+  if (isPublished !== undefined) item.isPublished = isPublished;
+  await item.save();
+  res.json({ ok: true, item: item.toSafeJSON() });
+});
+
+export const adminDeleteCareerPathItem = asyncHandler(async (req, res) => {
+  const item = await CareerPathItem.findById(req.params.id);
+  if (!item) throw new AppError('Career path item not found', 404);
+  await item.deleteOne();
   res.json({ ok: true });
 });

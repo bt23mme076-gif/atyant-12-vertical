@@ -9,6 +9,7 @@ import {
   adminListPillars, adminCreatePillar, adminUpdatePillar, adminDeletePillar,
   adminListItems, adminCreateItem, adminUpdateItem, adminDeleteItem,
   adminListCareerPaths, adminCreateCareerPath, adminUpdateCareerPath, adminDeleteCareerPath,
+  adminListCareerPathItems, adminCreateCareerPathItem, adminUpdateCareerPathItem, adminDeleteCareerPathItem,
   adminListFaqVideos, adminCreateFaqVideo, adminUpdateFaqVideo, adminDeleteFaqVideo,
   adminListQuizQuestions, adminCreateQuizQuestion, adminUpdateQuizQuestion, adminDeleteQuizQuestion,
 } from '../controllers/adminRoadmapController.js';
@@ -71,6 +72,12 @@ router.get('/career-paths', requireAdmin, adminListCareerPaths);
 router.post('/career-paths', requireAdmin, adminCreateCareerPath);
 router.patch('/career-paths/:id', requireAdmin, adminUpdateCareerPath);
 router.delete('/career-paths/:id', requireAdmin, adminDeleteCareerPath);
+
+// Career path content items (video/doc/article/task/quiz attached to a career path)
+router.get('/career-path-items', requireAdmin, adminListCareerPathItems);
+router.post('/career-path-items', requireAdmin, adminCreateCareerPathItem);
+router.patch('/career-path-items/:id', requireAdmin, adminUpdateCareerPathItem);
+router.delete('/career-path-items/:id', requireAdmin, adminDeleteCareerPathItem);
 
 router.get('/faq-videos', requireAdmin, adminListFaqVideos);
 router.post('/faq-videos', requireAdmin, adminCreateFaqVideo);
