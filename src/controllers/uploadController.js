@@ -220,6 +220,8 @@ export const serveRoadmapContent = (req, res) => {
     return res.status(404).json({ error: 'File not found' });
   }
 
+  // Prevent Express compression middleware from breaking HTTP range requests/video seeks
+  res.setHeader('x-no-compression', 'true');
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.sendFile(filePath);
 };
