@@ -11,7 +11,7 @@ if (missing.length) {
 export const config = {
   port: Number(process.env.PORT) || 5000,
   nodeEnv: process.env.NODE_ENV || 'development',
-  corsOrigins: (process.env.CORS_ORIGINS || 'https://localhost:5173')
+  corsOrigins: (process.env.CORS_ORIGINS || 'https://jee.atyant.in')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean),
@@ -37,7 +37,7 @@ export const config = {
     secretKey: process.env.CASHFREE_SECRET_KEY || '',
     environment: process.env.CASHFREE_ENVIRONMENT || process.env.CASHFREE_ENV || 'sandbox',
   },
-  frontendUrl: process.env.FRONTEND_URL || 'https://jee.atyant.in',
+  frontendUrl: process.env.FRONTEND_URL || 'https://atyantjee02-fe.vercel.app/',
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
   },
