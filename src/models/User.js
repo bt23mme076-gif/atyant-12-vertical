@@ -48,6 +48,7 @@ const userSchema = new mongoose.Schema(
     preferredLang: { type: String, trim: true },
     gender: { type: String, trim: true },
     bundles: [{ type: String }],
+    unlockedPaths: [{ type: String }],
     bio: { type: String, trim: true, maxLength: 5000 },
     profilePhotoFilename: { type: String },
     idDocFilename: { type: String },

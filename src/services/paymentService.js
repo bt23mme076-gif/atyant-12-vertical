@@ -14,6 +14,8 @@ export const PLANS = {
   'college-clarity':        { id: 'college-clarity',        title: 'College Clarity',            amount: 999 },
   'admission-success':      { id: 'admission-success',      title: 'Admission Success',          amount: 1999 },
   'admission-career-growth':{ id: 'admission-career-growth',title: 'Admission + Career Growth',  amount: 4999 },
+  // Career Paths
+  'career-premium':         { id: 'career-premium',         title: 'Premium Career Path',        amount: 249 },
 };
 
 // Legacy plan ids that used to be separate PLANS entries but were always
@@ -140,6 +142,9 @@ export async function activatePremiumForPayment(payment) {
 
   user.premium = true;
   user.premiumActivatedAt = new Date();
+  if (payment.pathSlug && !user.unlockedPaths.includes(payment.pathSlug)) {
+    user.unlockedPaths.push(payment.pathSlug);
+  }
   if (!user.phone && payment.phone) user.phone = payment.phone;
   if (!user.name && payment.name) user.name = payment.name;
   await user.save();

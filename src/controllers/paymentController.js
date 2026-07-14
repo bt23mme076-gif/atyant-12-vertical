@@ -34,6 +34,7 @@ export const createOrderSchema = z.object({
     'complete-round', 'ultimate-peace',
     'csab-complete', 'csab-ultimate',
     'college-clarity', 'admission-success', 'admission-career-growth',
+    'career-premium',
     // Legacy id, redirected to 'complete-round' below via PLAN_ID_ALIASES —
     // kept accepted here so old frontend links/bookmarks don't 400 instead
     // of silently resolving to the current plan.
@@ -43,11 +44,12 @@ export const createOrderSchema = z.object({
   email: z.string().email(),
   phone: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
   mentorId: z.string().nullish().or(z.literal('')),
+  pathSlug: z.string().nullish(), // Optional, used for career-premium
 });
 
 // POST /api/payments/orders — public, called when user clicks "Buy"
 export const createPaymentOrder = asyncHandler(async (req, res) => {
-  const { name, email, phone, mentorId } = req.body;
+  const { name, email, phone, mentorId, pathSlug } = req.body;
   // Resolve legacy plan ids to their canonical form right at the API
   // boundary, before anything else touches planId — Cashfree order
   // creation, the Payment record, and the response should only ever see
@@ -81,6 +83,7 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
         email,
         phone,
         mentorId: mentorId || undefined,
+        pathSlug: pathSlug || undefined,
         status: 'created',
       });
       break;
