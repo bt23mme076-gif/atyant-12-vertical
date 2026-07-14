@@ -49,7 +49,7 @@ export const createOrderSchema = z.object({
 
 // POST /api/payments/orders — public, called when user clicks "Buy"
 export const createPaymentOrder = asyncHandler(async (req, res) => {
-  const { name, email, phone, mentorId, pathSlug } = req.body;
+  const { name, email, phone, mentorId, pathSlug, returnUrl } = req.body;
   // Resolve legacy plan ids to their canonical form right at the API
   // boundary, before anything else touches planId — Cashfree order
   // creation, the Payment record, and the response should only ever see
@@ -60,7 +60,7 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
   let orderResult;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      orderResult = await createOrder({ planId, name, email, phone });
+      orderResult = await createOrder({ planId, name, email, phone, returnUrl });
       break;
     } catch (err) {
       if (attempt === 3) throw err;
@@ -90,7 +90,7 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
     } catch (err) {
       if (err.code === 11000 && attempt < 3) {
         // Extremely rare collision — generate a fresh order and retry
-        orderResult = await createOrder({ planId, name, email, phone });
+        orderResult = await createOrder({ planId, name, email, phone, returnUrl });
         continue;
       }
       throw err;
@@ -195,6 +195,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       status: payment.status,
       planId: payment.planId,
       amount: payment.amount * 100,
+      pathSlug: payment.pathSlug,
     },
   });
 });

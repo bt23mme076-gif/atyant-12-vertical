@@ -36,7 +36,7 @@ export function getPlan(planId) {
   return plan;
 }
 
-export async function createOrder({ planId, name, email, phone }) {
+export async function createOrder({ planId, name, email, phone, returnUrl }) {
   const plan = getPlan(planId);
   const orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -55,7 +55,7 @@ export async function createOrder({ planId, name, email, phone }) {
       customer_email: email || 'student@atyant.in',
     },
     order_meta: {
-      return_url: `${config.frontendUrl}/profile?order_id={order_id}`,
+      return_url: returnUrl || `${config.frontendUrl}/profile?order_id={order_id}`,
     },
     order_note: `Atyant Mentorship - ${plan.title}`,
   };
