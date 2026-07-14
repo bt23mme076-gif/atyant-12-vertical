@@ -10,7 +10,6 @@ const paymentSchema = new mongoose.Schema(
     // Order details
     planId: { type: String, required: true }, // 'better-college' | 'better-branch' | 'combo' | '1to1'
     planTitle: { type: String, required: true },
-    pathSlug: { type: String }, // For career-premium single path unlocking
     amount: { type: Number, required: true }, // in paise
     currency: { type: String, default: 'INR' },
 
