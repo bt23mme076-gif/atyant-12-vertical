@@ -91,7 +91,7 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
     } catch (err) {
       if (err.code === 11000 && attempt < 3) {
         // Extremely rare collision — generate a fresh order and retry
-        orderResult = await createOrder({ planId, name, email, phone, returnUrl });
+        orderResult = await createOrder({ plan, name, email, phone, returnUrl });
         continue;
       }
       throw err;
