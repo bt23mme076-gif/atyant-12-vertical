@@ -124,6 +124,8 @@ userSchema.methods.toSafeJSON = function () {
     referralCount: this.referralCount || 0,
     googleAvatar: this.googleAvatar || '',
     gender: this.gender || '',   // shared field — applies to all roles
+    purchasedCourses: Array.isArray(this.purchasedCourses) ? this.purchasedCourses : [],
+    unlockedPaths: Array.isArray(this.unlockedPaths) ? this.unlockedPaths : [],
   };
 
   // Only include mentor-specific fields if the user is a mentor
