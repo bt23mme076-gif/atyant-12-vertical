@@ -44,6 +44,7 @@ app.use(
   })
 );
 
+// Triggered a nodemon restart to ensure .env is reloaded
 
 // We mount it BEFORE the JSON parser, with a raw parser that also stores
 // the buffer on req.rawBody.
