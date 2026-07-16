@@ -29,17 +29,7 @@ export const listPlans = asyncHandler(async (req, res) => {
 });
 
 export const createOrderSchema = z.object({
-  planId: z.enum([
-    // Canonical plan ids (see PLANS in services/paymentService.js)
-    'complete-round', 'ultimate-peace',
-    'csab-complete', 'csab-ultimate',
-    'college-clarity', 'admission-success', 'admission-career-growth',
-    'career-premium',
-    // Legacy id, redirected to 'complete-round' below via PLAN_ID_ALIASES —
-    // kept accepted here so old frontend links/bookmarks don't 400 instead
-    // of silently resolving to the current plan.
-    'dream-seat',
-  ]),
+  planId: z.string(),
   name: z.string().min(1).max(120),
   email: z.string().email(),
   phone: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
@@ -47,24 +37,35 @@ export const createOrderSchema = z.object({
   pathSlug: z.string().nullish(), // Optional, used for career-premium
 });
 
+import { Course } from '../models/Course.js';
+
 // POST /api/payments/orders — public, called when user clicks "Buy"
 export const createPaymentOrder = asyncHandler(async (req, res) => {
   const { name, email, phone, mentorId, pathSlug, returnUrl } = req.body;
-  // Resolve legacy plan ids to their canonical form right at the API
-  // boundary, before anything else touches planId — Cashfree order
-  // creation, the Payment record, and the response should only ever see
-  // the canonical id from here on.
-  const planId = PLAN_ID_ALIASES[req.body.planId] || req.body.planId;
+  const rawPlanId = PLAN_ID_ALIASES[req.body.planId] || req.body.planId;
+
+  let plan;
+  if (PLANS[rawPlanId]) {
+    plan = PLANS[rawPlanId];
+  } else {
+    // If not in static PLANS, check if it's a Course slug
+    const course = await Course.findOne({ slug: rawPlanId });
+    if (!course) throw new AppError(`Unknown plan or course: ${rawPlanId}`, 400);
+    plan = {
+      id: course.slug,
+      title: course.title,
+      amount: course.price,
+    };
+  }
 
   // Retry up to 3 times in the rare case of a duplicate orderId collision
   let orderResult;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      orderResult = await createOrder({ planId, name, email, phone, returnUrl });
+      orderResult = await createOrder({ plan, name, email, phone, returnUrl });
       break;
     } catch (err) {
       if (attempt === 3) throw err;
-      // Only retry on Cashfree-level duplicate order errors
     }
   }
 

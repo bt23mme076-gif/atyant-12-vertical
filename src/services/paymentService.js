@@ -36,8 +36,7 @@ export function getPlan(planId) {
   return plan;
 }
 
-export async function createOrder({ planId, name, email, phone, returnUrl }) {
-  const plan = getPlan(planId);
+export async function createOrder({ plan, name, email, phone, returnUrl }) {
   const orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   const cashfreeUrl = config.cashfree.environment === 'production'
@@ -145,6 +144,12 @@ export async function activatePremiumForPayment(payment) {
   if (payment.pathSlug && !user.unlockedPaths.includes(payment.pathSlug)) {
     user.unlockedPaths.push(payment.pathSlug);
   }
+  
+  // If planId is not a static plan, assume it is a course slug
+  if (!PLANS[payment.planId] && !user.purchasedCourses.includes(payment.planId)) {
+    user.purchasedCourses.push(payment.planId);
+  }
+
   if (!user.phone && payment.phone) user.phone = payment.phone;
   if (!user.name && payment.name) user.name = payment.name;
   await user.save();

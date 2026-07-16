@@ -37,7 +37,7 @@ export const config = {
     secretKey: process.env.CASHFREE_SECRET_KEY || '',
     environment: process.env.CASHFREE_ENVIRONMENT || process.env.CASHFREE_ENV || 'sandbox',
   },
-  frontendUrl: process.env.FRONTEND_URL || 'https://atyantjee02-fe.vercel.app',
+  frontendUrl: 'https://jee.atyant.in',
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
   },

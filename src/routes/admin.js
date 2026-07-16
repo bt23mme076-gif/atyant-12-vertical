@@ -13,6 +13,11 @@ import {
   adminListFaqVideos, adminCreateFaqVideo, adminUpdateFaqVideo, adminDeleteFaqVideo,
   adminListQuizQuestions, adminCreateQuizQuestion, adminUpdateQuizQuestion, adminDeleteQuizQuestion,
 } from '../controllers/adminRoadmapController.js';
+import {
+  adminListCourses, adminCreateCourse, adminUpdateCourse, adminDeleteCourse,
+  adminListModules, adminCreateModule, adminUpdateModule, adminDeleteModule,
+  adminListItems as adminListCourseItems, adminCreateItem as adminCreateCourseItem, adminUpdateItem as adminUpdateCourseItem, adminDeleteItem as adminDeleteCourseItem
+} from '../controllers/adminCourseController.js';
 
 const router = Router();
 
@@ -89,5 +94,21 @@ router.get('/quiz-questions', requireAdmin, adminListQuizQuestions);
 router.post('/quiz-questions', requireAdmin, adminCreateQuizQuestion);
 router.patch('/quiz-questions/:id', requireAdmin, adminUpdateQuizQuestion);
 router.delete('/quiz-questions/:id', requireAdmin, adminDeleteQuizQuestion);
+
+// ─── Course Management ────────────────────────────────────────────────
+router.get('/courses', requireAdmin, adminListCourses);
+router.post('/courses', requireAdmin, adminCreateCourse);
+router.patch('/courses/:id', requireAdmin, adminUpdateCourse);
+router.delete('/courses/:id', requireAdmin, adminDeleteCourse);
+
+router.get('/course-modules', requireAdmin, adminListModules);
+router.post('/course-modules', requireAdmin, adminCreateModule);
+router.patch('/course-modules/:id', requireAdmin, adminUpdateModule);
+router.delete('/course-modules/:id', requireAdmin, adminDeleteModule);
+
+router.get('/course-items', requireAdmin, adminListCourseItems);
+router.post('/course-items', requireAdmin, adminCreateCourseItem);
+router.patch('/course-items/:id', requireAdmin, adminUpdateCourseItem);
+router.delete('/course-items/:id', requireAdmin, adminDeleteCourseItem);
 
 export default router;
