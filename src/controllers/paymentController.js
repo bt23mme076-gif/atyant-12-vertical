@@ -104,7 +104,7 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
     email,
     phone,
     source: 'pricing',
-    meta: { planId, paymentId: payment._id, mentorId },
+    meta: { planId: rawPlanId, paymentId: payment._id, mentorId },
   });
   payment.leadId = lead._id;
   await payment.save();
