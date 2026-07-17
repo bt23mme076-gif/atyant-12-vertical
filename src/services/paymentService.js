@@ -139,15 +139,20 @@ export async function activatePremiumForPayment(payment) {
   const user = await User.findOne({ $or: orConditions });
   if (!user) return null;
 
-  user.premium = true;
-  user.premiumActivatedAt = new Date();
-  if (payment.pathSlug && !user.unlockedPaths.includes(payment.pathSlug)) {
-    user.unlockedPaths.push(payment.pathSlug);
-  }
-  
-  // If planId is not a static plan, assume it is a course slug
-  if (!PLANS[payment.planId] && !user.purchasedCourses.includes(payment.planId)) {
-    user.purchasedCourses.push(payment.planId);
+  if (payment.roadmapItemId) {
+    if (!user.purchasedRoadmapItems.includes(payment.roadmapItemId)) {
+      user.purchasedRoadmapItems.push(payment.roadmapItemId);
+    }
+  } else {
+    user.premium = true;
+    user.premiumActivatedAt = new Date();
+    if (payment.pathSlug && !user.unlockedPaths.includes(payment.pathSlug)) {
+      user.unlockedPaths.push(payment.pathSlug);
+    }
+    // If planId is not a static plan, assume it is a course slug
+    if (!PLANS[payment.planId] && !user.purchasedCourses.includes(payment.planId)) {
+      user.purchasedCourses.push(payment.planId);
+    }
   }
 
   if (!user.phone && payment.phone) user.phone = payment.phone;

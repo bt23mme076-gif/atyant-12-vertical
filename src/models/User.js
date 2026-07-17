@@ -50,6 +50,7 @@ const userSchema = new mongoose.Schema(
     bundles: [{ type: String }],
     unlockedPaths: [{ type: String }],
     purchasedCourses: [{ type: String }],
+    purchasedRoadmapItems: [{ type: String }],
     bio: { type: String, trim: true, maxLength: 5000 },
     profilePhotoFilename: { type: String },
     idDocFilename: { type: String },
@@ -126,6 +127,7 @@ userSchema.methods.toSafeJSON = function () {
     gender: this.gender || '',   // shared field — applies to all roles
     purchasedCourses: Array.isArray(this.purchasedCourses) ? this.purchasedCourses : [],
     unlockedPaths: Array.isArray(this.unlockedPaths) ? this.unlockedPaths : [],
+    purchasedRoadmapItems: Array.isArray(this.purchasedRoadmapItems) ? this.purchasedRoadmapItems : [],
   };
 
   // Only include mentor-specific fields if the user is a mentor

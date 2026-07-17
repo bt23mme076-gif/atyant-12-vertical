@@ -84,12 +84,37 @@ export const listPillars = asyncHandler(async (req, res) => {
   const threshold = config.referral.unlockThreshold;
   const referralCount = req.user?.referralCount || 0;
 
+  const pillarMap = {};
+  for (const p of pillars) {
+    pillarMap[String(p._id)] = p.key;
+  }
+
   const itemsByPillar = {};
   for (const item of items) {
-    const key = String(item.pillar);
-    if (!itemsByPillar[key]) itemsByPillar[key] = [];
-    const locked = item.requiresReferralUnlock && referralCount < threshold;
-    itemsByPillar[key].push({ ...item.toSafeJSON(), locked });
+    const pId = String(item.pillar);
+    const pKey = pillarMap[pId];
+    if (!itemsByPillar[pId]) itemsByPillar[pId] = [];
+
+    let locked = false;
+    let price = 0;
+    if (pKey === 'industry-ready-skills') {
+      price = 249;
+      if (req.user) {
+        if (!req.user.premium && !req.user.purchasedRoadmapItems?.includes(String(item._id))) {
+          locked = true;
+        }
+      } else {
+        locked = true;
+      }
+    } else {
+      locked = item.requiresReferralUnlock && referralCount < threshold;
+    }
+
+    itemsByPillar[pId].push({
+      ...item.toSafeJSON(),
+      locked,
+      price: price > 0 ? price : undefined,
+    });
   }
 
   const progressByPillar = {};
@@ -119,12 +144,14 @@ export const listPillars = asyncHandler(async (req, res) => {
 
 export const completeItem = asyncHandler(async (req, res) => {
   const { itemId } = req.params;
-  const item = await RoadmapItem.findById(itemId);
+  const item = await RoadmapItem.findById(itemId).populate('pillar');
   if (!item) throw new AppError('Roadmap item not found', 404);
 
-  // A referral-gated item can't be completed (or opened) until the student
-  // has hit the unlock threshold, even if they somehow call this directly.
-  if (item.requiresReferralUnlock && (req.user.referralCount || 0) < config.referral.unlockThreshold) {
+  if (item.pillar && item.pillar.key === 'industry-ready-skills') {
+    if (!req.user.premium && !req.user.purchasedRoadmapItems?.includes(String(item._id))) {
+      throw new AppError('Purchase this section to unlock and complete', 403);
+    }
+  } else if (item.requiresReferralUnlock && (req.user.referralCount || 0) < config.referral.unlockThreshold) {
     throw new AppError('Refer more friends to unlock this content', 403);
   }
 

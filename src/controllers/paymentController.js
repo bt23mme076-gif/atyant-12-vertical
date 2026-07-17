@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { config } from '../config/env.js';
 import { Payment } from '../models/Payment.js';
 import { Lead } from '../models/Lead.js';
+import { RoadmapItem } from '../models/RoadmapItem.js';
 import { asyncHandler, AppError } from '../utils/asyncHandler.js';
 import { normalizePhoneVariants } from '../utils/phone.js';
 import {
@@ -35,17 +36,26 @@ export const createOrderSchema = z.object({
   phone: z.string().regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits"),
   mentorId: z.string().nullish().or(z.literal('')),
   pathSlug: z.string().nullish(), // Optional, used for career-premium
+  roadmapItemId: z.string().nullish(), // Optional, used for industry-ready-skills sections
 });
 
 import { Course } from '../models/Course.js';
 
 // POST /api/payments/orders — public, called when user clicks "Buy"
 export const createPaymentOrder = asyncHandler(async (req, res) => {
-  const { name, email, phone, mentorId, pathSlug, returnUrl } = req.body;
+  const { name, email, phone, mentorId, pathSlug, roadmapItemId, returnUrl } = req.body;
   const rawPlanId = PLAN_ID_ALIASES[req.body.planId] || req.body.planId;
 
   let plan;
-  if (PLANS[rawPlanId]) {
+  if (roadmapItemId) {
+    const item = await RoadmapItem.findById(roadmapItemId);
+    if (!item) throw new AppError('Roadmap item not found', 404);
+    plan = {
+      id: `roadmap-item-${item._id}`,
+      title: `Roadmap Module: ${item.title}`,
+      amount: 249,
+    };
+  } else if (PLANS[rawPlanId]) {
     plan = PLANS[rawPlanId];
   } else {
     // If not in static PLANS, check if it's a Course slug
@@ -85,6 +95,7 @@ export const createPaymentOrder = asyncHandler(async (req, res) => {
         phone,
         mentorId: mentorId || undefined,
         pathSlug: pathSlug || undefined,
+        roadmapItemId: roadmapItemId || undefined,
         status: 'created',
       });
       break;
@@ -197,6 +208,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       planId: payment.planId,
       amount: payment.amount * 100,
       pathSlug: payment.pathSlug,
+      roadmapItemId: payment.roadmapItemId,
     },
   });
 });
